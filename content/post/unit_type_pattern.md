@@ -128,7 +128,7 @@ Even if this can be satisfied with an annotation, I'll have broken every callsit
 
 ## Pattern: unit type params
 
-In the original implementation, `Xmodem` does something interesting with it's `inner` value. It's set to an unbounded type parameter `R`. In some of it's impls, it sets the type parameter to `()` and then quantifies the parameter over it's method. I decided to take this approach with `F`. If anyone has written Haskell, this may look familiar. Data types like a binary tree aren't usually bounded by `Ord` in the declaration, but the functions that interact with it provide an interface to the data that is bounded. I think this is a good strategy if it's possible. Try to keep the actual type declaration as generic as possible. You can control the bounds by choosing which methods you make public.
+In the original implementation, `Xmodem` does something interesting with it's `inner` value. It's set to an unbounded type parameter `R`. I decided to take this approach with `F`. If anyone has written Haskell, this may look familiar. Data types like a binary tree aren't usually bounded by `Ord` in the declaration, but the functions that interact with it provide an interface to the data that is bounded. I think this is a good strategy if it's possible. Try to keep the actual type declaration as generic as possible. You can control the bounds by choosing which methods you make public. Only in the impl are the bounds introduced (and then only on methods).
 
 The new `Xmodem` type:
 
@@ -194,9 +194,26 @@ Or leave it unbounded, which would cause a compilation error when calling `new_w
     |                            ^^^^^^^^^^^^^^^^^^^^^^^^^ expected an `FnMut<(progress::Progress,)>` closure, found `F`
 ```
 
-Unit's type and value are both `()`. In this case, we're able to satisfy the type parameters in the impl declaration and still control the bounds on the methods. The catch here is of course, the methods `transmit` `transmit_with_progress` and a few others not mentioned here are now only valid when `Xmodem` has `()` passed to it.
+Unit's type and value are both `()`. In this case, we're able to satisfy the type parameters in the impl declaration and still control the bounds on the methods. The catch here is of course, the methods `transmit` `transmit_with_progress` and a few others not mentioned here are now only valid when `Xmodem::<(), ()>`.
 
-Note, on IRC, a small improvement was suggested that makes the existential return a bit more explicit. Using the `()` type param again on the `new` impl:
+There's nothing prodigious about `()`. Any type will do. We could've written:
+
+```rust
+impl Xmodem<u8, u8> {
+    pub fn transmit<R, W>(data: R, to: W) -> io::Result<usize>
+    where
+        W: io::Read + io::Write,
+        R: io::Read,
+    {
+        Xmodem::transmit_with_progress(data, to, progress::noop)
+    }
+    // etc
+}
+```
+
+And everything would work just fine. I've seen `()` used before and I think it creates less room for confusion though.
+
+Note, on IRC, an improvement was suggested that makes the existential return a bit more explicit (thanks talchas). Using the `()` type param again on the `new` impl:
 
 ```rust
 impl<T> Xmodem<T, ()>
