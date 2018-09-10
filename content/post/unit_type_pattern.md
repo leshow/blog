@@ -194,7 +194,7 @@ Or leave it unbounded, which would cause a compilation error when calling `new_w
     |                            ^^^^^^^^^^^^^^^^^^^^^^^^^ expected an `FnMut<(progress::Progress,)>` closure, found `F`
 ```
 
-Unit's type and value are both `()`. In this case, we're able to satisfy the type parameters in the impl declaration and still control the bounds on the methods.
+Unit's type and value are both `()`. In this case, we're able to satisfy the type parameters in the impl declaration and still control the bounds on the methods. The catch here is of course, the methods `transmit` `transmit_with_progress` and a few others not mentioned here are now only valid when `Xmodem` has `()` passed to it.
 
 Note, on IRC, a small improvement was suggested that makes the existential return a bit more explicit. Using the `()` type param again on the `new` impl:
 
