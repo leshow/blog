@@ -102,7 +102,7 @@ impl<T: io::Read + io::Write> Xmodem<T, fn(Progress)> {
 }
 ```
 
-However, when you actually go to use this code, it produces a compiler error that after an hour of googling, I have no idea how to satisfy:
+However, when you actually go to use this code, it produces a compiler error with a misleading hint:
 
 ```bash
 error[E0284]: type annotations required: cannot resolve `<_ as std::ops::FnOnce<(progress::Progress,)>>::Output == ()`
@@ -124,11 +124,11 @@ note: required by `<Xmodem<(), F>>::transmit`
    | |_____^
 ```
 
-Even if this can be satisfied with an annotation, I'll have broken every call-site for `Xmodem` by needing to add type information.
+You can solve this annotation with `Xmodem::<(), fn(Progress) -> ()>::transmit`. But every call-site will need to be annotated. If the return type is changed to `impl FnMut`, as in the next section, it asks for an annotation I'm not sure how to solve.
 
 ## Using unit type params
 
-In the original implementation, `Xmodem` does something interesting with it's `inner` value. It's set to an unbounded type parameter `R`. We can take this approach with `F`. If anyone has written Haskell, this may look familiar: data types like a binary tree aren't usually bounded by `Ord` in the declaration, but the functions that interact with it provide an interface to the data that is bounded. I think this is a good strategy if it's available. Try to keep the actual type declaration as generic as possible. You can control the bounds by choosing which methods you make public. Only in the impl are the bounds introduced, and then only on the methods where necessary.
+In the original implementation, `Xmodem` does something interesting with it's `inner` value. It's set to an unbounded type parameter `R`. We can take this approach with `F`. If anyone has written Haskell, this may look familiar: data types like a binary tree aren't usually bounded by `Ord` in the declaration, however the functions that interact with it provide an interface to the data that is bounded. I think this is a good strategy if it's available. Keep the actual type declaration as generic as possible, then control the bounds by choosing which methods you make public. Only in the impl are the bounds introduced, and then only on the methods where necessary.
 
 The new `Xmodem` type:
 
