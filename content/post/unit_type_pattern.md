@@ -1,7 +1,7 @@
 ---
 title: "Unit Type Params"
 date: 2018-09-08T12:28:03-04:00
-draft: true
+draft: false
 ---
 
 I always enjoy reading blogs about design patterns or tricks people have picked up writing Rust. This is one I've seen a few times but never read about.
@@ -85,7 +85,7 @@ error[E0308]: mismatched types
                found type `fn(progress::Progress) {progress::noop}`
 ```
 
-## Break up new and new_with_progress
+## Separate new\* impls
 
 We can get the above to compile by breaking up the `new` method into it's own impl that's specific about the type it returns:
 
@@ -126,7 +126,7 @@ note: required by `<Xmodem<(), F>>::transmit`
 
 Even if this can be satisfied with an annotation, I'll have broken every callsite for `Xmodem` by needing to type information. I decided to go back and try something else.
 
-## Pattern: unit type params
+## Using unit type params
 
 In the original implementation, `Xmodem` does something interesting with it's `inner` value. It's set to an unbounded type parameter `R`. I decided to take this approach with `F`. If anyone has written Haskell, this may look familiar. Data types like a binary tree aren't usually bounded by `Ord` in the declaration, but the functions that interact with it provide an interface to the data that is bounded. I think this is a good strategy if it's possible. Try to keep the actual type declaration as generic as possible. You can control the bounds by choosing which methods you make public. Only in the impl are the bounds introduced (and then only on methods).
 
@@ -211,7 +211,7 @@ impl Xmodem<u8, u8> {
 }
 ```
 
-And everything would work just fine. I've seen `()` used before and I think it creates less room for confusion though.
+And everything would work just fine. I obviously didn't invent this, I don't know who did, but I've seen `()` used before and I think it creates less room for confusion.
 
 Note, on IRC, an improvement was suggested that makes the existential return a bit more explicit (thanks talchas). Using the `()` type param again on the `new` impl:
 
