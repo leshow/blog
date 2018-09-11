@@ -175,7 +175,6 @@ impl<T: io::Read + io::Write> Xmodem<T, fn(Progress)> {
         }
     }
 }
-with_progress
 ```
 
 If I had put `impl<F> Xmodem<(), F>`, I would either have to bound the entire `impl` block by `where F: Fn(Progress)`, which gets me back to:
@@ -196,18 +195,35 @@ Or leave it unbounded, which would cause a compilation error when calling `new_w
 
 Unit's type and value are both `()`. In this case, we're able to satisfy the type parameters in the impl declaration and still control the bounds on the methods. The catch here is of course, the methods `transmit` `transmit_with_progress` and a few others not mentioned here are now only valid when `Xmodem::<(), ()>`.
 
+**EDIT**: I somehow forgot the most important code section of the post!
+
+Using unit as a type param we can write,
+
+```rust
+impl<T: io::Read + io::Write> Xmodem<T, ()> {
+    pub fn new(inner: T) -> Xmodem<T, fn(Progress)> {
+        Xmodem {
+            packet: 1,
+            started: false,
+            inner,
+            progress: progress::noop,
+        }
+    }
+}
+```
+
 There's nothing prodigious about `()`. Any type will do. We could've written:
 
 ```rust
-impl Xmodem<u8, u8> {
-    pub fn transmit<R, W>(data: R, to: W) -> io::Result<usize>
-    where
-        W: io::Read + io::Write,
-        R: io::Read,
-    {
-        Xmodem::transmit_with_progress(data, to, progress::noop)
+impl<T: io::Read + io::Write> Xmodem<T, u8> {
+    pub fn new(inner: T) -> Xmodem<T, fn(Progress)> {
+        Xmodem {
+            packet: 1,
+            started: false,
+            inner,
+            progress: progress::noop,
+        }
     }
-    // etc
 }
 ```
 
