@@ -108,7 +108,7 @@ However, when you actually go to use this code, it produces a compiler error tha
 error[E0284]: type annotations required: cannot resolve `<_ as std::ops::FnOnce<(progress::Progress,)>>::Output == ()`
   --> src/tests.rs:51:48
    |
-51 |     let tx_thread = std::thread::spawn(move || Xmodem::transmit(&input[..], rx)); // <FnOnce<(Progress)>>::Output = ()
+51 |     let tx_thread = std::thread::spawn(move || Xmodem::transmit(&input[..], rx));
    |                                                ^^^^^^^^^^^^^^^^
    |
 note: required by `<Xmodem<(), F>>::transmit`
