@@ -1,16 +1,16 @@
 ---
 title: "Unit Type Params"
-date: 2018-09-08T12:28:03-04:00
+date: 2018-09-10T12:28:03-04:00
 draft: false
 ---
 
-I always enjoy reading blogs about design patterns or tricks people have picked up writing Rust. This is one I've seen a few times but never read about.
+I always enjoy reading blogs about patterns or tricks people have picked up writing Rust. I've seen this a few times but not read about it anywhere.
 
-I've been doing class assignments from the wonderful [Operating Systems cs140e](https://web.stanford.edu/class/cs140e/syllabus/). I highly recommend this class if you know Rust and would like to try writing some lower level code. The class involves building bits of an OS for the raspberry pi. It requires some hardware components, and it took me a while to source the parts they used in the class, particularly the CP2102 USB dongle (links at the end of the article).
+I've been doing class assignments from [Operating Systems cs140e](https://web.stanford.edu/class/cs140e/syllabus/). I highly recommend this class if you know a bit of Rust and would like to try writing some lower level code. The class involves building bits of an OS for the raspberry pi. It requires some hardware components, and it took me a while to source the parts they used in the class, particularly the CP2102 USB dongle. Links at the end of the article.
 
 ## The problem
 
-[Assignment 1](https://web.stanford.edu/class/cs140e/assignments/1-shell/) has multiple phases, one of which is to implement parts of the [Xmodem](https://en.wikipedia.org/wiki/XMODEM) protocol. Xmodem is is used for transferring data through serial interfaces. Although we haven't arrived there yet, I imagine it'll be used for transferring data from the pc to Pi through the CP2102 dongle.
+[Assignment 1](https://web.stanford.edu/class/cs140e/assignments/1-shell/) has multiple phases, one of which is to implement parts of the [Xmodem](https://en.wikipedia.org/wiki/XMODEM) protocol. Xmodem is used for transferring data through serial interfaces. Although we haven't arrived there yet, I imagine it'll be used for transferring data to pi through the CP2102 dongle.
 
 This is the `Xmodem` struct as given at the start of the assignment:
 
@@ -27,9 +27,9 @@ type ProgressFn = fn(Progress);
 pub fn noop(_: Progress) {}
 ```
 
-Notice `ProgressFn`, which here is a function pointer. After I completed the assignment, I came back to this. I wanted to show a running progress bar, but with a function pointer I had no ability to capture any outside variables in my `ProgressFn`. Or at least no way that I knew of. If I wanted to capture variables from another scope, I needed to refactor this to be a closure.
+Notice `ProgressFn` is a function pointer. After I completed the assignment, I came back to this. I wanted to show a running progress bar, but with a function pointer I had no ability to capture any outside variables in my `ProgressFn`. Or at least no way that I knew of. If I wanted to capture variables from another scope, I needed to refactor this into a closure.
 
-There's a lot of solutions on offer here. I could have just stuffed a `Box<dyn FnMut(ProgressFn)>` in the struct and been done with it, and while the Xmodem didn't have no_std, none of the other assignments did allocation and I didn't want to start here. So, feeling parsimonious, I decided against boxing altogether.
+There's a lot of solutions on offer here. I could have just stuffed a `Box<dyn FnMut(ProgressFn)>` in the struct and been done with it, and while the Xmodem didn't have no_std, none of the other assignments did allocation and I didn't want to start here. Feeling parsimonious, I decided against boxing altogether.
 
 ## First attempt
 
@@ -45,7 +45,7 @@ where
 }
 ```
 
-To me, this had a syllogism to it. I want to hold a closure, so I should bound my declaration by that. When you introduce bounds here, they propagate to the every impl block afterwards. See if you can spot the problem here:
+To me, this had a syllogism to it. I want to hold a closure, so I should bound my declaration by that. When you introduce bounds here, they propagate, almost leaking out, to the every impl block afterwards. See if you can spot the problem:
 
 ```rust
 impl<T: io::Read + io::Write, F: FnMut(Progress)> Xmodem<T, F> {
@@ -70,7 +70,7 @@ impl<T: io::Read + io::Write, F: FnMut(Progress)> Xmodem<T, F> {
 }
 ```
 
-`Xmodem::new` is returning `progress::noop`, our function pointer. But it's type variable says that it must be a `Xmodem<T, F>` where F is some `FnMut(Progress)`. Substituting a `|_: Progress| {}` in it's place doesn't help either, it's still choosing some specific trait when there's a more general one in the type signature. Our type `F` claims to be valid for all `FnMut`, but we're giving it a specific closure/fn pointer. You may recognize this as being an existential type.
+`Xmodem::new` is returning `progress::noop`, our function pointer. Only it's type variable says that it must be a `Xmodem<T, F>` where F is some `FnMut(Progress)`. Substituting a closure `|_: Progress| {}` in it's place doesn't help either, it's still choosing some specific trait when there's a more general one in the type signature. Our type `F` claims to be valid for all `FnMut`, but we're giving it a specific closure/fn pointer. You may recognize this as being an existential type.
 
 Here's the error:
 
@@ -85,7 +85,7 @@ error[E0308]: mismatched types
                found type `fn(progress::Progress) {progress::noop}`
 ```
 
-## Separate new\* impls
+## Separate the new\* impls
 
 We can get the above to compile by breaking up the `new` method into it's own impl that's specific about the type it returns:
 
@@ -124,11 +124,11 @@ note: required by `<Xmodem<(), F>>::transmit`
    | |_____^
 ```
 
-Even if this can be satisfied with an annotation, I'll have broken every callsite for `Xmodem` by needing to type information. I decided to go back and try something else.
+Even if this can be satisfied with an annotation, I'll have broken every call-site for `Xmodem` by needing to add type information.
 
 ## Using unit type params
 
-In the original implementation, `Xmodem` does something interesting with it's `inner` value. It's set to an unbounded type parameter `R`. I decided to take this approach with `F`. If anyone has written Haskell, this may look familiar. Data types like a binary tree aren't usually bounded by `Ord` in the declaration, but the functions that interact with it provide an interface to the data that is bounded. I think this is a good strategy if it's possible. Try to keep the actual type declaration as generic as possible. You can control the bounds by choosing which methods you make public. Only in the impl are the bounds introduced (and then only on methods).
+In the original implementation, `Xmodem` does something interesting with it's `inner` value. It's set to an unbounded type parameter `R`. We can take this approach with `F`. If anyone has written Haskell, this may look familiar: data types like a binary tree aren't usually bounded by `Ord` in the declaration, but the functions that interact with it provide an interface to the data that is bounded. I think this is a good strategy if it's available. Try to keep the actual type declaration as generic as possible. You can control the bounds by choosing which methods you make public. Only in the impl are the bounds introduced, and then only on the methods where necessary.
 
 The new `Xmodem` type:
 
@@ -211,9 +211,9 @@ impl Xmodem<u8, u8> {
 }
 ```
 
-And everything would work just fine. I obviously didn't invent this, I don't know who did, but I've seen `()` used before and I think it creates less room for confusion.
+And everything would work just fine. `()` creates less room for confusion and ambiguity though.
 
-Note, on IRC, an improvement was suggested that makes the existential return a bit more explicit (thanks talchas). Using the `()` type param again on the `new` impl:
+On IRC, an improvement was suggested that makes things a bit more explicit. Using the `()` type param again on the `new` impl:
 
 ```rust
 impl<T> Xmodem<T, ()>
@@ -233,30 +233,30 @@ where
 
 ## On Nightly
 
-Thanks to talchas on IRC, who mentioned a solution that's available behind a feature flag on nightly. It's possible to declare a type as existential and circumvent having to pass `()` as a type parameter in the impl block.
+I was also directed to this possible solution, which is available on nightly behind a feature flag. This makes it possible to declare a type as existential and circumvent passing `()` as a type parameter. This is and the previous solution are from talchas:
 
 ```rust
 #![feature(existential_type)]
 existential type ProgressFn: FnMut();
 
-struct Xmodem<F>(F);
+struct Foo<F>(F);
 
-impl Xmodem<ProgressFn> {
+impl Foo<ProgressFn> {
     fn new() -> Self {
-        Xmodem(||())
+        Foo(||())
     }
 }
 ```
 
-To me this seems closer to ideal. We have the language to tell the type system that ProgressFn is in existential and pass it as a type parameter directly.
+IMO, this seems closer to ideal. We have the language to tell the type system what's going on.
 
 ## Thank you
 
-Thanks for reading! The Rust community is wonderful, special thanks to those on the #rust IRC
+Thanks for reading! The Rust community has been great to me over the last few years. I come from a web background, and never thought I would do anything interesting in a language as low level as Rust. Shout out to all the fine people I've bothered with questions.
 
 ### CP2102 dongle
 
-Be careful when you source this part to get the 5Pin version and not the 6Pin one that seems fairly popular online.
+Be careful when you source this part to get the 5-pin version and not the 6-pin one that seems fairly popular online.
 
 USA: [cp2102](https://www.amazon.com/HiLetgo-CP2102-Converter-Adapter-Downloader/dp/B00LODGRV8/ref=sr_1_4?s=electronics&ie=UTF8&qid=1536424599&sr=1-4&keywords=cp2102)
 
