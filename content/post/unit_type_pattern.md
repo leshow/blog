@@ -29,14 +29,14 @@ pub fn noop(_: Progress) {}
 
 Notice `ProgressFn` is a function pointer. After I completed the assignment, I came back to this. I wanted to show a running progress bar, but with a function pointer I had no ability to capture any outside variables in my `ProgressFn`. Or at least no way that I knew of. If I wanted to capture variables from another scope, I needed to refactor this into a closure.
 
-There's a lot of solutions on offer here. I could have just stuffed a `Box<dyn FnMut(ProgressFn)>` in the struct and been done with it, and while the Xmodem didn't have no_std, none of the other assignments did allocation and I didn't want to start here. Feeling parsimonious, I decided against boxing altogether.
+There's a lot of solutions on offer here. I could have just stuffed a `Box<dyn Fn(ProgressFn)>` in the struct and been done with it, and while the Xmodem didn't have no_std, none of the other assignments did allocation and I didn't want to start here. Feeling parsimonious, I decided against boxing altogether.
 
 ## First attempt
 
 ```rust
 pub struct Xmodem<R, F>
 where
-    F: FnMut(Progress),
+    F: Fn(Progress),
 {
     packet: u8,
     inner: R,
@@ -48,7 +48,7 @@ where
 To me, this had a syllogism to it. I want to hold a closure, so I should bound my declaration by that. When you introduce bounds here, they propagate, almost leaking out, to the every impl block afterwards. See if you can spot the problem:
 
 ```rust
-impl<T: io::Read + io::Write, F: FnMut(Progress)> Xmodem<T, F> {
+impl<T: io::Read + io::Write, F: Fn(Progress)> Xmodem<T, F> {
     pub fn new(inner: T) -> Self {
         Xmodem {
             packet: 1,
@@ -70,7 +70,7 @@ impl<T: io::Read + io::Write, F: FnMut(Progress)> Xmodem<T, F> {
 }
 ```
 
-`Xmodem::new` is returning `progress::noop`, our function pointer. Only it's type variable says that it must be a `Xmodem<T, F>` where F is some `FnMut(Progress)`. Substituting a closure `|_: Progress| {}` in it's place doesn't help either, it's still choosing some specific trait when there's a more general one in the type signature. Our type `F` claims to be valid for all `FnMut`, but we're giving it a specific closure/fn pointer. You may recognize this as being an existential type.
+`Xmodem::new` is returning `progress::noop`, our function pointer. Only it's type variable says that it must be a `Xmodem<T, F>` where F is some `Fn(Progress)`. Substituting a closure `|_: Progress| {}` in it's place doesn't help either, it's still choosing some specific trait when there's a more general one in the type signature. Our type `F` claims to be valid for all `Fn`, but we're giving it a specific closure/fn pointer. You may recognize this as being an existential type.
 
 Here's the error:
 
@@ -124,7 +124,7 @@ note: required by `<Xmodem<(), F>>::transmit`
    | |_____^
 ```
 
-You can solve this annotation with `Xmodem::<(), fn(Progress) -> ()>::transmit`. But every call-site will need to be annotated. If the return type is changed to `impl FnMut`, as in the next section, it asks for an annotation I'm not sure how to solve.
+You can solve this annotation with `Xmodem::<(), fn(Progress) -> ()>::transmit`. But every call-site will need to be annotated. If the return type is changed to `impl Fn`, as in the next section, it asks for an annotation I'm not sure how to solve.
 
 ## Using unit type params
 
@@ -157,7 +157,7 @@ impl Xmodem<(), ()>
     where
         W: io::Read + io::Write,
         R: io::Read,
-        F: FnMut(Progress)
+        F: Fn(Progress)
     {
         let mut transmitter = Xmodem::new_with_progress(to, f);
         //...
@@ -178,7 +178,7 @@ impl<T: io::Read + io::Write> Xmodem<T, fn(Progress)> {
 with_progress
 ```
 
-If I had put `impl<F> Xmodem<(), F>`, I would either have to bound the entire `impl` block by `where F: FnMut(Progress)`, which gets me back to:
+If I had put `impl<F> Xmodem<(), F>`, I would either have to bound the entire `impl` block by `where F: Fn(Progress)`, which gets me back to:
 
 ```bash
 error[E0284]: type annotations required: cannot resolve `<_ as std::ops::FnOnce<(progress::Progress,)>>::Output == ()`
@@ -191,7 +191,7 @@ Or leave it unbounded, which would cause a compilation error when calling `new_w
 
 ```bash
 106 |         let mut receiver = Xmodem::new_with_progress(from, f);
-    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^ expected an `FnMut<(progress::Progress,)>` closure, found `F`
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^ expected an `Fn<(progress::Progress,)>` closure, found `F`
 ```
 
 Unit's type and value are both `()`. In this case, we're able to satisfy the type parameters in the impl declaration and still control the bounds on the methods. The catch here is of course, the methods `transmit` `transmit_with_progress` and a few others not mentioned here are now only valid when `Xmodem::<(), ()>`.
@@ -220,7 +220,7 @@ impl<T> Xmodem<T, ()>
 where
     T: io::Read + io::Write,
 {
-    pub fn new(inner: T) -> Xmodem<T, impl FnMut(Progress)> {
+    pub fn new(inner: T) -> Xmodem<T, impl Fn(Progress)> {
         Xmodem {
             packet: 1,
             started: false,
@@ -237,7 +237,7 @@ I was also directed to this possible solution, which is available on nightly beh
 
 ```rust
 #![feature(existential_type)]
-existential type ProgressFn: FnMut();
+existential type ProgressFn: Fn();
 
 struct Foo<F>(F);
 
