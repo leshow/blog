@@ -1,5 +1,5 @@
 ---
-title: "Serialization Lib Shootout: Haskell vs Rust"
+title: "Serialization: Haskell & Rust"
 date: 2019-03-20T22:52:17-04:00
 draft: true
 ---
@@ -78,11 +78,13 @@ pub struct Node {
 }
 ```
 
-Note the `rename`. Serde has a bunch of these baked in, like `rename_all = "snake_case"` or `lowercase`. Read about them [here](https://serde.rs/variant-attrs.html)
+Note the `rename`. Serde has a bunch of these baked in, like `rename_all="snake_case"` or `lowercase`. Read about them [here](https://serde.rs/variant-attrs.html)
 
 ## Conclusion
 
-Haskell arguably has more flexibility here as `fieldLabelModifier` can be any function. I'm curious about the performance characteristics of that though, someone can correct me if I'm wrong here but briefly looking through the code for `serde_derive` it looks like serde will do the transformation at compile time. I can't say definitively if aeson will do that with `fieldLabelModifier` but my guess is not (feel free to correct me if I'm wrong).
+Haskell arguably has more flexibility here as `fieldLabelModifier` can be any function, but it seems that flexibility comes at a price. Briefly looking through the code for `serde_derive` it looks like serde will do the transformation at compile time (by virtue of `rename_by_rules` occuring inside `from_ast` [here](https://github.com/serde-rs/serde/blob/fa854a21083b06f509c537190550555e5473644f/serde_derive/src/internals/attr.rs#L1159)). I can't say definitively aeson won't do that with `fieldLabelModifier` but my guess is this is a run-time transformation, I'd happily like to be proven wrong though.
+
+In a lot of ways the libraries function very similarly, and really, comparing the ergonomics of a library across languages is foolish. I did write less concrete instances in serde though.
 
 --
 
