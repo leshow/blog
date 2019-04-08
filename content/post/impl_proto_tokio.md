@@ -69,7 +69,7 @@ fn subscribe(events: Vec<Event>) -> io::Result<()> {
 
 Here, we are resolving that `connect`, then writing the subscribe data to the Stream using `io::write_all`. After that's done we must read from the Stream in decode_response (the `{success:true}` response). And only then will we wait to receive the first event, and decode.
 
-`decode_response` is a Future itself. It takes a closure that receives a message type and buffer and presumably does something with the data:
+`decode_response` is a Future itself and higher-order. It takes a closure that receives a message type and buffer and presumably does something with the data.
 
 ```rust
 fn decode_response<F>(stream: UnixStream, f: F) -> impl Future<Item = UnixStream, Error = io::Error>
@@ -185,6 +185,7 @@ pub fn subscribe(
             let framed = FramedRead::new(stream, EvtCodec);
             let sender = framed
                 .for_each(move |evt| {
+                    // do something with each event
                     let tx = tx.clone();
                     tx.send(evt)
                         .map(|_| ())
@@ -206,10 +207,47 @@ I decided to pass in a `Sender` and use a `futures::mpsc::channel` to communicat
 
 There's an extra `spawn` for the bit that runs `sender`. This is because `sender` is still a Future. If we return it instead of spawning it, then `for_each` would wait for it to complete before it accepts the next response. That's probably not a big deal here since i3 will probably only send a single event at a time, but there's not much point in doing all this work if we don't enable ourselves to actually use the concurrency provided.
 
+## Manual Futures
+
+Tokio's IO is built on top of `AsyncRead` and `AsyncWrite` in much the same way that std's IO is build on top if `Read` and `Write`. In fact, you `AsyncRead`/`AsyncWrite` are super traits of `Read` & `Write`, respectively. To compare `impl Trait` to other solutions to turn `decode_response` into a handcoded `Future`. If you recall; `decode_response` is split into two distinct parts based on deciding us finding the length of the message to be read. I found it difficult to get that functionality into a hand written future without `Read::read_exact`, until I found [ReadExact](https://tokio.rs/docs/going-deeper/io/) in the tokio docs, which let me to `tokio_io::io::read_exact` which just returns a type that implements `Future` (so we can call `poll` on it).
+
+Here's what `decode_response` as custom future looks like:
+
+```rust
+#[derive(Debug)]
+pub struct I3Msg<D> {
+    stream: UnixStream,
+    _marker: PhantomData<D>,
+}
+
+impl<D: DeserializeOwned> Future for I3Msg<D> {
+    type Item = MsgResponse<D>;
+    type Error = io::Error;
+    fn poll(&mut self) -> Poll<Self::Item, io::Error> {
+        let mut buf = [0_u8; 14]; // buffer for the first bit
+        let (rdr, initial) = try_ready!(read_exact(&self.stream, &mut buf).poll()); // this returns the reader and the written-to buffer
+
+        if &initial[0..6] != MAGIC.as_bytes() {
+            panic!("Magic str not received");
+        }
+        let payload_len = LittleEndian::read_u32(&initial[6..10]) as usize;
+        let msg_type = LittleEndian::read_u32(&initial[10..14]);
+        // get the payload now
+        let mut buf = vec![0_u8; payload_len];
+        let (_rdr, payload) = try_ready!(read_exact(rdr, &mut buf).poll());
+
+        Ok(Async::Ready(MsgResponse {
+            msg_type: msg_type.into(),
+            body: serde_json::from_slice(&payload[..])?,
+        }))
+    }
+}
+```
+
 ## Conclusion
 
-I started this tokio adventure feeling very much like I was in over my head. However the more time I spent interacting with the various bits of the ecosystem the more I realized the parts that seemed obscure and magic were very much non-magical. The Future and Stream traits, along with the tokio ecosystem built on top of it are very well thought out and while difficult initially, are pretty damn cool and not so bad after you spend some time with them.
+I started this tokio adventure feeling very much like I was in over my head. However the more time I spent interacting with the various bits of the ecosystem the more I realized the parts that seemed obscure and magic were very much non-magical. The Future and Stream traits, along with the tokio ecosystem built on top of it are very well thought out and while difficult initially, are pretty damn cool and not so bad after you spend some time with them. I also noticed that after I got past a certain point in my understanding of how everything fit together I was making orders of magnitude more progress than when I started.
 
-I'm not quite done building this library and polishing things off, I will write a part 2 after everything is completed. I am by no means a tokio expert so if anyone catches any errors or has some tips, I'd love to hear the feedback. Otherwise I hope this is helpful to someone. 'Till next time
+I'm not quite done building this library and polishing things off, I will write a part 2 after everything is completed. I am by no means a tokio expert so if anyone catches any errors or has some tips, I'd love to hear the feedback. One thing I'm still a bit uncertain about is threading errors through the various futures. I hope this was helpful to someone. 'Till next time
 
 Cheers
