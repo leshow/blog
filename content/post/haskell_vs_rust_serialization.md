@@ -89,12 +89,3 @@ Haskell arguably has more flexibility here as `fieldLabelModifier` can be any fu
 In a lot of ways the libraries function very similarly, and really, comparing the ergonomics of a library across languages is foolish. I did write less concrete instances in serde though.
 
 --
-
-`i3-tracker` is all synchronous, as is `i3ipc`, which irked me. The idea of spawning a new thread to do a timeout and potentially having those pile up unbounded-- while likely never to account for anything more than a momentary stutter (if that) screamed out to me "there has to be a better way". So, I did what any individual immersed in Rust of the times would do: I attempted to re-write it in tokio.
-
-Tokio is super cool, it's also has a rep for being not very approachable. I'm not a systems developer, I write code for the web, so it has been a challenge. Still, I managed to fork `i3-tracker` and get everything running in a single thread without to much hassle. Then I went proudly look at my achievement in htop only to find 2 threads running:
-
-- One for tokio that had all my futures + timeout code and received input from a `futures::mpsc::channel`
-- And one for listening to i3's UNIX socket, the domain of`i3ipc-rs`
-
-And thus, I am writing a library intended to be the async version of `i3ipc`, because all it takes is the entire ecosystem to be rewritten in async IO for me to finally be able to do all of this in one thread.
