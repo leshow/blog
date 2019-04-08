@@ -4,13 +4,15 @@ date: 2018-09-10T12:28:03-04:00
 draft: false
 ---
 
+**Updated**: The cs140e hosted on Stanford's servers is down, but Sergio has helpfully put up an archived copy [here](https://cs140e.sergio.bz/). I've changed the links in this post to reflect that.
+
 I always enjoy reading blogs about patterns or tricks people have picked up writing Rust. I've seen this a few times but not read about it anywhere.
 
-I've been doing class assignments from [Operating Systems cs140e](https://web.stanford.edu/class/cs140e/syllabus/). I highly recommend this class if you know a bit of Rust and would like to try writing some lower level code. The class involves building bits of an OS for the raspberry pi. It requires some hardware components, and it took me a while to source the parts they used in the class, particularly the CP2102 USB dongle. Links at the end of the article.
+I've been doing class assignments from [Operating Systems cs140e](https://cs140e.sergio.bz/syllabus/). I highly recommend this class if you know a bit of Rust and would like to try writing some lower level code. The class involves building bits of an OS for the raspberry pi. It requires some hardware components, and it took me a while to source the parts they used in the class, particularly the CP2102 USB dongle. Links at the end of the article.
 
 ## The problem
 
-[Assignment 1](https://web.stanford.edu/class/cs140e/assignments/1-shell/) has multiple phases, one of which is to implement parts of the [Xmodem](https://en.wikipedia.org/wiki/XMODEM) protocol. Xmodem is used for transferring data through serial interfaces. Although we haven't arrived there yet, I imagine it'll be used for transferring data to pi through the CP2102 dongle.
+[Assignment 1](https://cs140e.sergio.bz/assignments/1-shell/) has multiple phases, one of which is to implement parts of the [Xmodem](https://en.wikipedia.org/wiki/XMODEM) protocol. Xmodem is used for transferring data through serial interfaces. Although we haven't arrived there yet, I imagine it'll be used for transferring data to pi through the CP2102 dongle.
 
 This is the `Xmodem` struct as given at the start of the assignment:
 
