@@ -22,7 +22,7 @@ Without further ado, let's get to the implementation.
 
 I think the most obvious place to start is using the built in combinators that come with `futures` and `tokio`. With the advent of Rust 1.26 and impl Trait we can return this as a `impl Future<Item=(), Error=()>`.
 
-While tokio has some good examples using [TcpListener](https://tokio.rs/docs/io/overview/) for processing incoming tcp connections, I couldn't find much for bidirectional communication using `UnixStream`. The first challenge I found being naive of the tokio ecosystem is that `tokio_uds::UnixStream` returns a `ConnectFuture`. Rather than actually connecting to anything this is a type which implements Future (rather obvious in hindsight) that must be polled in order to actually connect to the socket.
+While tokio has some good examples using [TcpListener](https://tokio.rs/docs/io/overview/) for processing incoming tcp connections, I couldn't find much for bidirectional communication using `UnixStream`. The first challenge I found being naive of the tokio ecosystem is that `tokio_uds::UnixStream` returns a `ConnectFuture`. Rather than actually connecting to anything this is a type which implementes Future (rather obvious in hindsight) that must be polled in order to actually connect to the socket.
 
 Therefore, we must use `and_then` to access the `UnixStream` that will be resolved after the `ConnectFuture` runs:
 
@@ -65,7 +65,7 @@ fn subscribe(events: Vec<Event>) -> io::Result<()> {
 }
 ```
 
-Here, we are resolving that `connect`, then writing the subscribe data to the Stream using `io::write_all`. After that's done we must read from the Stream in decode_response (the {success:true} response). And only then will we wait to receive out first event, and decode that.
+Here, we are resolving that `connect`, then writing the subscribe data to the Stream using `io::write_all`. After that's done we must read from the Stream in decode_repsonse (the {success:true} response). And only then will we wait to receive out first event, and decode that.
 
 `decode_response` is a Future itself. It takes a closure that receives a message type and buffer and presumably does something with the data:
 
@@ -107,7 +107,7 @@ I began reading some more tokio documentation and it seemed more and more like t
 
 As far as I can tell option 1 doesn't really work for `Stream`. It doesn't look like it's possible to return an `impl Stream` of i3 event responses. The path is to implement a `Future` to decode a single message, then build a `Stream` out of those futures which naturally leads us to option 2.
 
-I have a suspicion that by going through all that I'd be re-building machinery that `Encoder` / `Decoder` do anyway. I did a GitHub search for `tokio_codec` and limited the search to Rust to see what would come up. I didn't find a lot of examples so I'm happy to throw mine in the mix.
+I have a suspicion that by going through all that I'd be re-building machinery that `Encoder` / `Decoder` do anyway. I did a github search for `tokio_codec` and limited the search to Rust to see what would come up. I didn't find a lot of examples so I'm happy to throw mine in the mix.
 
 Most codecs appear to be unit structs, mine was no different:
 
@@ -118,7 +118,7 @@ struct EventCodec;
 After the initial success response from sending subscribe all my stream needs to do is decode messages and run the json parts through serde, therefore I've only implemented `Decoder` for `EventCodec`.
 
 ```rust
-impl Decoder for EventCodec {
+impl Decoder for EvtCodec {
     type Item = event::Event;
     type Error = io::Error;
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, io::Error> {
