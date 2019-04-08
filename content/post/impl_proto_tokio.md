@@ -1,10 +1,10 @@
 ---
-title: "Tokio Protocols"
+title: "Protocols in Tokio (i3 IPC)"
 date: 2019-04-07T18:53:18-04:00
-draft: true
+draft: false
 ---
 
-There's a dearth of blog posts online that cover the details of implementing a custom protocol in tokio, at least that I've found. I'm going to cover some of the steps I went through in implementing an async version i3's [IPC](https://i3wm.org/docs/ipc.html). Granted, I've not finished my library to a point I'm comfortable releasing it, but I hope I can provide some examples for the aspiring async IO enthusiast that I wish I had when I started. A basic knowledge of `futures` and `tokio` will be helpful.
+There's a dearth of blog posts online that cover the details of implementing a custom protocol in tokio, at least that I've found. I'm going to cover some of the steps I went through in implementing an async version i3wm's [IPC](https://i3wm.org/docs/ipc.html). Granted, I've not finished my library to a point I'm comfortable releasing it, but I hope I can provide some examples for the aspiring async IO enthusiast that I wish I had when I started. A basic knowledge of `futures` and `tokio` will be helpful.
 
 ## The Protocol
 
