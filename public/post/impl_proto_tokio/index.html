@@ -165,7 +165,7 @@
   
   
   &nbsp;|&nbsp;
-  <i class="fa fa-clock-o"></i> 8 minutes (1521 words)
+  <i class="fa fa-clock-o"></i> 8 minutes (1522 words)
   
   
 </span>
@@ -315,8 +315,8 @@
 
 <p>The first time I tried using this, it accepted a single event but decoded it infinitely. My console filled with the exact same event being processed again and again. After some <a href="https://stackoverflow.com/questions/55552090/tokio-framedread-for-each-called-indefinitely-for-single-response">stackoverflow</a> help I added <code>src.clear()</code>, to clear the buffer after successfully decoding the event and produce a single frame per event.</p>
 
-<p>You can use Decoders and Encoders to turn a <code>UnixStream</code> or <code>TcpStream</code> into frames using:</p>
-<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="kd">let</span><span class="w"> </span><span class="n">framed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FramedRead</span>::<span class="n">new</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">EvtCodec</span><span class="p">);</span><span class="w">
+<p>You can use <code>Decoder</code>s and <code>Encoder</code>s to turn a <code>UnixStream</code> or <code>TcpStream</code> into frames using:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="kd">let</span><span class="w"> </span><span class="n">framed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FramedRead</span>::<span class="n">new</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">EventCodec</span><span class="p">);</span><span class="w">
 </span><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="n">sender</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">framed</span><span class="w">
 </span><span class="w">    </span><span class="p">.</span><span class="n">for_each</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">|</span><span class="n">evt</span>: <span class="nc">event</span>::<span class="n">Event</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
 </span><span class="w">        </span><span class="c1">// do something
@@ -343,7 +343,7 @@
 </span><span class="c1"></span><span class="w">            </span><span class="p">})</span><span class="w">
 </span><span class="w">        </span><span class="p">})</span><span class="w">
 </span><span class="w">        </span><span class="p">.</span><span class="n">and_then</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">|</span><span class="n">stream</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">framed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FramedRead</span>::<span class="n">new</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">EvtCodec</span><span class="p">);</span><span class="w">
+</span><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">framed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FramedRead</span>::<span class="n">new</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">EventCodec</span><span class="p">);</span><span class="w">
 </span><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">sender</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">framed</span><span class="w">
 </span><span class="w">                </span><span class="p">.</span><span class="n">for_each</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">|</span><span class="n">evt</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
 </span><span class="w">                    </span><span class="c1">// do something with each event
@@ -367,7 +367,7 @@
 
 <p>There&rsquo;s an extra <code>spawn</code> for the bit that runs <code>sender</code>. This is because <code>sender</code> is still a Future. If we return it instead of spawning it, then <code>for_each</code> would wait for it to complete before it accepts the next response. That&rsquo;s probably not a big deal here since i3 will probably only send a single event at a time, but there&rsquo;s not much point in doing all this work if we don&rsquo;t enable ourselves to actually use the concurrency provided.</p>
 
-<h2 id="manually-implementing-future">Manually Implementing Future</h2>
+<h2 id="manually-implementing-future">Manually Implementing <code>Future</code></h2>
 
 <p>Tokio&rsquo;s IO is built on top of <code>AsyncRead</code> and <code>AsyncWrite</code> in much the same way that std&rsquo;s IO is built on top if <code>Read</code> and <code>Write</code>. In fact, you <code>AsyncRead</code>/<code>AsyncWrite</code> are super traits of <code>Read</code> &amp; <code>Write</code>, respectively. To compare <code>impl Trait</code> to other solutions to turn <code>decode_response</code> into a handcoded <code>Future</code>. If you recall; <code>decode_response</code> is split into two distinct parts based on deciding us finding the length of the message to be read. I found it difficult to get that functionality into a hand written future without <code>Read::read_exact</code>, until I found <a href="https://tokio.rs/docs/going-deeper/io/">ReadExact</a> in the tokio docs, which let me to <code>tokio_io::io::read_exact</code> which just returns a type that implements <code>Future</code> (so we can call <code>poll</code> on it).</p>
 
@@ -402,7 +402,7 @@
 </span></code></pre></div>
 <h2 id="conclusion">Conclusion</h2>
 
-<p>I started this tokio adventure feeling very much like I was in over my head. However the more time I spent interacting with the various bits of the ecosystem the more I realized the parts that seemed obscure and magic were very much non-magical. The Future and Stream traits, along with the tokio ecosystem built on top of it are very well thought out and while difficult initially, are pretty damn cool and not so bad after you spend some time with them. I also noticed that after I got past a certain point in my understanding of how everything fit together I was making orders of magnitude more progress than when I started.</p>
+<p>When I started this tokio adventure and felt very much like I was in over my head. However, the more time I spent interacting with the various bits of the ecosystem the more I realized the parts that seemed obscure and magic were very much non-magical. The <code>Future</code> and <code>Stream</code> traits, along with the tokio and <code>AsyncRead</code>/<code>AsyncWrite</code> and the ecosystem built on top of that feel well thought out and logical; though not without initial difficulty. I also noticed that after I got past a certain point in my understanding of how everything fit together I was making orders of magnitude more progress than when I started, and more importantly I was having fun again.</p>
 
 <p>I&rsquo;m not quite done building this library and polishing things off, I will write a part 2 after everything is completed. I am by no means a tokio expert so if anyone catches any errors or has some tips, I&rsquo;d love to hear the feedback. One thing I&rsquo;m still a bit uncertain about is threading errors through the various futures. I hope this was helpful to someone. &lsquo;Till next time</p>
 

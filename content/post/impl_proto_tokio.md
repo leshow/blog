@@ -149,10 +149,10 @@ Our `Decoder` produces `Event` responses, which is the deserialized result of pa
 
 The first time I tried using this, it accepted a single event but decoded it infinitely. My console filled with the exact same event being processed again and again. After some [stackoverflow](https://stackoverflow.com/questions/55552090/tokio-framedread-for-each-called-indefinitely-for-single-response) help I added `src.clear()`, to clear the buffer after successfully decoding the event and produce a single frame per event.
 
-You can use Decoders and Encoders to turn a `UnixStream` or `TcpStream` into frames using:
+You can use `Decoder`s and `Encoder`s to turn a `UnixStream` or `TcpStream` into frames using:
 
 ```rust
-let framed = FramedRead::new(stream, EvtCodec);
+let framed = FramedRead::new(stream, EventCodec);
 let sender = framed
     .for_each(move |evt: event::Event| {
         // do something
@@ -182,7 +182,7 @@ pub fn subscribe(
             })
         })
         .and_then(move |stream| {
-            let framed = FramedRead::new(stream, EvtCodec);
+            let framed = FramedRead::new(stream, EventCodec);
             let sender = framed
                 .for_each(move |evt| {
                     // do something with each event
@@ -207,7 +207,7 @@ I decided to pass in a `Sender` and use a `futures::mpsc::channel` to communicat
 
 There's an extra `spawn` for the bit that runs `sender`. This is because `sender` is still a Future. If we return it instead of spawning it, then `for_each` would wait for it to complete before it accepts the next response. That's probably not a big deal here since i3 will probably only send a single event at a time, but there's not much point in doing all this work if we don't enable ourselves to actually use the concurrency provided.
 
-## Manually Implementing Future
+## Manually Implementing `Future`
 
 Tokio's IO is built on top of `AsyncRead` and `AsyncWrite` in much the same way that std's IO is built on top if `Read` and `Write`. In fact, you `AsyncRead`/`AsyncWrite` are super traits of `Read` & `Write`, respectively. To compare `impl Trait` to other solutions to turn `decode_response` into a handcoded `Future`. If you recall; `decode_response` is split into two distinct parts based on deciding us finding the length of the message to be read. I found it difficult to get that functionality into a hand written future without `Read::read_exact`, until I found [ReadExact](https://tokio.rs/docs/going-deeper/io/) in the tokio docs, which let me to `tokio_io::io::read_exact` which just returns a type that implements `Future` (so we can call `poll` on it).
 
@@ -245,7 +245,7 @@ impl<D: DeserializeOwned> Future for I3Msg<D> {
 
 ## Conclusion
 
-I started this tokio adventure feeling very much like I was in over my head. However the more time I spent interacting with the various bits of the ecosystem the more I realized the parts that seemed obscure and magic were very much non-magical. The Future and Stream traits, along with the tokio ecosystem built on top of it are very well thought out and while difficult initially, are pretty damn cool and not so bad after you spend some time with them. I also noticed that after I got past a certain point in my understanding of how everything fit together I was making orders of magnitude more progress than when I started.
+When I started this tokio adventure and felt very much like I was in over my head. However, the more time I spent interacting with the various bits of the ecosystem the more I realized the parts that seemed obscure and magic were very much non-magical. The `Future` and `Stream` traits, along with the tokio and `AsyncRead`/`AsyncWrite` and the ecosystem built on top of that feel well thought out and logical; though not without initial difficulty. I also noticed that after I got past a certain point in my understanding of how everything fit together I was making orders of magnitude more progress than when I started, and more importantly I was having fun again.
 
 I'm not quite done building this library and polishing things off, I will write a part 2 after everything is completed. I am by no means a tokio expert so if anyone catches any errors or has some tips, I'd love to hear the feedback. One thing I'm still a bit uncertain about is threading errors through the various futures. I hope this was helpful to someone. 'Till next time
 
