@@ -149,6 +149,13 @@ Our `Decoder` produces `Event` responses, which is the deserialized result of pa
 
 The first time I tried using this, it accepted a single event but decoded it infinitely. My console filled with the exact same event being processed again and again. After some [stackoverflow](https://stackoverflow.com/questions/55552090/tokio-framedread-for-each-called-indefinitely-for-single-response) help I added `src.clear()`, to clear the buffer after successfully decoding the event and produce a single frame per event.
 
+**Edit**: The correct thing to do here is not to `clear` the frame but instead `advance` it as described by a very helpful user on the rust [subreddit](https://www.reddit.com/r/rust/comments/bb7m1u/protocols_in_tokio_i3_ipc/ekh9rnq/). So, that line should read:
+
+```rust
+let evt = ...;
+src.advance(14 + payload_len);
+```
+
 You can use `Decoder`s and `Encoder`s to turn a `UnixStream` or `TcpStream` into frames using:
 
 ```rust
