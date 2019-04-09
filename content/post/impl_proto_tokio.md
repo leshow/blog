@@ -216,7 +216,7 @@ There's an extra `spawn` for the bit that runs `sender`. This is because `sender
 
 ## Manually Implementing `Future`
 
-Tokio's IO is built on top of `AsyncRead` and `AsyncWrite` in much the same way that std's IO is built on top if `Read` and `Write`. In fact, you `AsyncRead`/`AsyncWrite` are super traits of `Read` & `Write`, respectively. To compare `impl Trait` to other solutions to turn `decode_response` into a handcoded `Future`. If you recall; `decode_response` is split into two distinct parts based on deciding us finding the length of the message to be read. I found it difficult to get that functionality into a hand written future without `Read::read_exact`, until I found [ReadExact](https://tokio.rs/docs/going-deeper/io/) in the tokio docs, which let me to `tokio_io::io::read_exact` which just returns a type that implements `Future` (so we can call `poll` on it).
+Tokio's IO is built on top of `AsyncRead` and `AsyncWrite` in much the same way that std's IO is built on top if `Read` and `Write`. In fact, `AsyncRead`/`AsyncWrite` are super traits of `Read` & `Write`, respectively. To compare `impl Trait` to other solutions, I decided to turn `decode_response` into a handcoded `Future`. If you recall; `decode_response` is split into two distinct parts based on deciding us finding the length of the message to be read. I found it difficult to get that functionality into a hand written future without `Read::read_exact`, until I found [ReadExact](https://tokio.rs/docs/going-deeper/io/) in the tokio docs, which let me to `tokio_io::io::read_exact` which just returns a type that implements `Future` (so we can call `poll` on it).
 
 Here's what `decode_response` as custom future looks like:
 

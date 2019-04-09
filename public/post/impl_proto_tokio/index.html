@@ -165,7 +165,7 @@
   
   
   &nbsp;|&nbsp;
-  <i class="fa fa-clock-o"></i> 8 minutes (1556 words)
+  <i class="fa fa-clock-o"></i> 8 minutes (1557 words)
   
   
 </span>
@@ -373,7 +373,7 @@
 
 <h2 id="manually-implementing-future">Manually Implementing <code>Future</code></h2>
 
-<p>Tokio&rsquo;s IO is built on top of <code>AsyncRead</code> and <code>AsyncWrite</code> in much the same way that std&rsquo;s IO is built on top if <code>Read</code> and <code>Write</code>. In fact, you <code>AsyncRead</code>/<code>AsyncWrite</code> are super traits of <code>Read</code> &amp; <code>Write</code>, respectively. To compare <code>impl Trait</code> to other solutions to turn <code>decode_response</code> into a handcoded <code>Future</code>. If you recall; <code>decode_response</code> is split into two distinct parts based on deciding us finding the length of the message to be read. I found it difficult to get that functionality into a hand written future without <code>Read::read_exact</code>, until I found <a href="https://tokio.rs/docs/going-deeper/io/">ReadExact</a> in the tokio docs, which let me to <code>tokio_io::io::read_exact</code> which just returns a type that implements <code>Future</code> (so we can call <code>poll</code> on it).</p>
+<p>Tokio&rsquo;s IO is built on top of <code>AsyncRead</code> and <code>AsyncWrite</code> in much the same way that std&rsquo;s IO is built on top if <code>Read</code> and <code>Write</code>. In fact, <code>AsyncRead</code>/<code>AsyncWrite</code> are super traits of <code>Read</code> &amp; <code>Write</code>, respectively. To compare <code>impl Trait</code> to other solutions, I decided to turn <code>decode_response</code> into a handcoded <code>Future</code>. If you recall; <code>decode_response</code> is split into two distinct parts based on deciding us finding the length of the message to be read. I found it difficult to get that functionality into a hand written future without <code>Read::read_exact</code>, until I found <a href="https://tokio.rs/docs/going-deeper/io/">ReadExact</a> in the tokio docs, which let me to <code>tokio_io::io::read_exact</code> which just returns a type that implements <code>Future</code> (so we can call <code>poll</code> on it).</p>
 
 <p>Here&rsquo;s what <code>decode_response</code> as custom future looks like:</p>
 <div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="cp">#[derive(Debug)]</span><span class="w">
