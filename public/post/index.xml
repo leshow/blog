@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on Esoterically Typed</title>
+    <link>https://leshow.github.io/post/</link>
+    <description>Recent content in Posts on Esoterically Typed</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <managingEditor>cameron.evan@gmail.com (Evan Cameron)</managingEditor>
+    <webMaster>cameron.evan@gmail.com (Evan Cameron)</webMaster>
+    <lastBuildDate>Mon, 08 Apr 2019 18:53:18 -0400</lastBuildDate>
+    
+	<atom:link href="https://leshow.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Protocols in Tokio (i3 IPC)</title>
+      <link>https://leshow.github.io/post/impl_proto_tokio/</link>
+      <pubDate>Mon, 08 Apr 2019 18:53:18 -0400</pubDate>
+      <author>cameron.evan@gmail.com (Evan Cameron)</author>
+      <guid>https://leshow.github.io/post/impl_proto_tokio/</guid>
+      <description>There&amp;rsquo;s a dearth of blog posts online that cover the details of implementing a custom protocol in tokio, at least that I&amp;rsquo;ve found. I&amp;rsquo;m going to cover some of the steps I went through in implementing an async version i3wm&amp;rsquo;s IPC. Granted, I&amp;rsquo;ve not finished my library to a point I&amp;rsquo;m comfortable releasing it, but I hope I can provide some examples for the aspiring async IO enthusiast that I wish I had when I started.</description>
+    </item>
+    
+    <item>
+      <title>Unit Type Params</title>
+      <link>https://leshow.github.io/post/unit_type_pattern/</link>
+      <pubDate>Mon, 10 Sep 2018 12:28:03 -0400</pubDate>
+      <author>cameron.evan@gmail.com (Evan Cameron)</author>
+      <guid>https://leshow.github.io/post/unit_type_pattern/</guid>
+      <description>Updated: The cs140e hosted on Stanford&amp;rsquo;s servers is down, but Sergio has helpfully put up an archived copy here. I&amp;rsquo;ve changed the links in this post to reflect that.
+I always enjoy reading blogs about patterns or tricks people have picked up writing Rust. I&amp;rsquo;ve seen this a few times but not read about it anywhere.
+I&amp;rsquo;ve been doing class assignments from Operating Systems cs140e. I highly recommend this class if you know a bit of Rust and would like to try writing some lower level code.</description>
+    </item>
+    
+  </channel>
+</rss>

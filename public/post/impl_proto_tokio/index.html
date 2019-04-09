@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>Protocols in Tokio (i3 IPC)</title>
+  <meta property="og:title" content="Protocols in Tokio (i3 IPC)" />
+  <meta name="twitter:title" content="Protocols in Tokio (i3 IPC)" />
+  <meta name="description" content="There&rsquo;s a dearth of blog posts online that cover the details of implementing a custom protocol in tokio, at least that I&rsquo;ve found. I&rsquo;m going to cover some of the steps I went through in implementing an async version i3wm&rsquo;s IPC. Granted, I&rsquo;ve not finished my library to a point I&rsquo;m comfortable releasing it, but I hope I can provide some examples for the aspiring async IO enthusiast that I wish I had when I started.">
+  <meta property="og:description" content="There&rsquo;s a dearth of blog posts online that cover the details of implementing a custom protocol in tokio, at least that I&rsquo;ve found. I&rsquo;m going to cover some of the steps I went through in implementing an async version i3wm&rsquo;s IPC. Granted, I&rsquo;ve not finished my library to a point I&rsquo;m comfortable releasing it, but I hope I can provide some examples for the aspiring async IO enthusiast that I wish I had when I started.">
+  <meta name="twitter:description" content="There&rsquo;s a dearth of blog posts online that cover the details of implementing a custom protocol in tokio, at least that I&rsquo;ve found. I&rsquo;m going to cover some of the steps I went through …">
+  <meta name="author" content="Evan Cameron"/>
+  <link href='https://leshow.github.io/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@evan_cam_" />
+  <meta name="twitter:creator" content="@evan_cam_" />
+  <meta property="og:url" content="https://leshow.github.io/post/impl_proto_tokio/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Esoterically Typed" />
+
+  <meta name="generator" content="Hugo 0.54.0" />
+  <link rel="canonical" href="https://leshow.github.io/post/impl_proto_tokio/" />
+  <link rel="alternate" href="https://leshow.github.io/index.xml" type="application/rss+xml" title="Esoterically Typed">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.css" integrity="sha384-wITovz90syo1dJWVh32uuETPVEtGigN07tkttEqPv+uR2SE/mbQcG7ATL28aI9H0" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://leshow.github.io/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://leshow.github.io/css/highlight.min.css" /><link rel="stylesheet" href="https://leshow.github.io/css/codeblock.css" />
+
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://leshow.github.io">Esoterically Typed</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Blog" href="/">Blog</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    <div class="avatar-container">
+      <div class="avatar-img-border">
+        
+          <a title="Esoterically Typed" href="https://leshow.github.io">
+            <img class="avatar-img" src="https://leshow.github.io/img/avatar-icon.png" alt="Esoterically Typed" />
+          </a>
+        
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+    
+  
+  
+  
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>Protocols in Tokio (i3 IPC)</h1>
+                
+                
+                  <span class="post-meta">
+  
+  
+  <i class="fa fa-calendar-o"></i>&nbsp;Posted on April 8, 2019
+  
+  
+  &nbsp;|&nbsp;
+  <i class="fa fa-clock-o"></i> 8 minutes (1521 words)
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        
+
+<p>There&rsquo;s a dearth of blog posts online that cover the details of implementing a custom protocol in tokio, at least that I&rsquo;ve found. I&rsquo;m going to cover some of the steps I went through in implementing an async version i3wm&rsquo;s <a href="https://i3wm.org/docs/ipc.html">IPC</a>. Granted, I&rsquo;ve not finished my library to a point I&rsquo;m comfortable releasing it, but I hope I can provide some examples for the aspiring async IO enthusiast that I wish I had when I started. A basic knowledge of <code>futures</code> and <code>tokio</code> will be helpful.</p>
+
+<h2 id="the-protocol">The Protocol</h2>
+
+<p>i3&rsquo;s protocol is pretty simple. It uses a unix socket, and all messages sent to and from i3 follow the same general pattern:</p>
+<div class="highlight"><pre class="chroma">&#34;i3-ipc&#34;&lt;payload len (u32)&gt;&lt;message type (u32)&gt;&lt;json encoded payload&gt;</pre></div>
+<p>We can subscribe to events like &ldquo;window&rdquo; and &ldquo;workspace&rdquo;, which will have data written to the socket when you do things like change active windows or switch workspaces. These strings are json encoded in an array and sent as the payload along with the &lsquo;subscribe command&rsquo;. In response, we get a payload of <code>{&quot;success&quot;: true}</code> (or false).</p>
+
+<p>Without further ado, let&rsquo;s get to the implementation.</p>
+
+<h2 id="using-combinators-and-tokio-io">Using combinators and tokio::io</h2>
+
+<p>I think the most obvious place to start is using the built in combinators that come with <code>futures</code> and <code>tokio</code>. With the advent of Rust 1.26 and impl Trait we can return this as a <code>impl Future&lt;Item=(), Error=()&gt;</code>.</p>
+
+<p>While tokio has some good examples using <a href="https://tokio.rs/docs/io/overview/">TcpListener</a> for processing incoming tcp connections, I couldn&rsquo;t find much for bidirectional communication using <code>UnixStream</code>. The first challenge I found, being naive of the tokio ecosystem, is that <code>tokio_uds::UnixStream::connect</code> returns a <code>ConnectFuture</code>. Rather than actually connecting to anything this is a type which implements Future (rather obvious in hindsight) that must be polled in order to actually connect to the socket.</p>
+
+<p>Therefore, we must use <code>and_then</code> to access the <code>UnixStream</code> that will be resolved after the <code>ConnectFuture</code> runs:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">use</span><span class="w"> </span><span class="n">tokio_uds</span>::<span class="n">UnixStream</span><span class="p">;</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="n">fut</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UnixStream</span>::<span class="n">connect</span><span class="p">(</span><span class="n">path</span><span class="p">).</span><span class="n">and_then</span><span class="p">(</span><span class="o">|</span><span class="n">stream</span>: <span class="nc">UnixStream</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="c1">// do wonderful things
+</span><span class="c1"></span><span class="p">});</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="c1">// and of course, to actually run it all
+</span><span class="c1"></span><span class="n">tokio</span>::<span class="n">run</span><span class="p">(</span><span class="n">fut</span><span class="p">);</span><span class="w">
+</span></code></pre></div>
+<p>So, the back and forth looks something like this:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">subscribe</span><span class="p">(</span><span class="n">events</span>: <span class="nb">Vec</span><span class="o">&lt;</span><span class="n">Event</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">io</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">fut</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UnixStream</span>::<span class="n">connect</span><span class="p">(</span><span class="n">socket_path</span><span class="p">()</span><span class="o">?</span><span class="p">)</span><span class="w">
+</span><span class="w">        </span><span class="p">.</span><span class="n">and_then</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">|</span><span class="n">stream</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">buf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">subscribe_payload</span><span class="p">(</span><span class="n">events</span><span class="p">);</span><span class="w">
+</span><span class="w">            </span><span class="n">tokio</span>::<span class="n">io</span>::<span class="n">write_all</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">)</span><span class="w">
+</span><span class="w">        </span><span class="p">})</span><span class="w">
+</span><span class="w">        </span><span class="p">.</span><span class="n">and_then</span><span class="p">(</span><span class="o">|</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">_buf</span><span class="p">)</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="n">decode_response</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="o">|</span><span class="n">msg_type</span>: <span class="kt">u32</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span>: <span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">u8</span><span class="o">&gt;|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">                </span><span class="kd">let</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">String</span>::<span class="n">from_utf8</span><span class="p">(</span><span class="n">buf</span><span class="p">.</span><span class="n">to_vec</span><span class="p">()).</span><span class="n">unwrap</span><span class="p">();</span><span class="w">
+</span><span class="w">                </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{:?}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">);</span><span class="w"> </span><span class="c1">// {success:true}
+</span><span class="c1"></span><span class="w">                </span><span class="n">dbg</span><span class="o">!</span><span class="p">(</span><span class="n">msg_type</span><span class="p">);</span><span class="w"> </span><span class="c1">// 2 (for subscribe)
+</span><span class="c1"></span><span class="w">            </span><span class="p">})</span><span class="w">
+</span><span class="w">        </span><span class="p">})</span><span class="w">
+</span><span class="w">        </span><span class="p">.</span><span class="n">and_then</span><span class="p">(</span><span class="o">|</span><span class="n">stream</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="n">decode_response</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="o">|</span><span class="n">evt_type</span>: <span class="kt">u32</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span>: <span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">u8</span><span class="o">&gt;|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">                </span><span class="kd">let</span><span class="w"> </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">decode_evt</span><span class="p">(</span><span class="n">evt_type</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">);</span><span class="w"> </span><span class="c1">// mostly does serde deserializing, not shown
+</span><span class="c1"></span><span class="w">                </span><span class="n">dbg</span><span class="o">!</span><span class="p">(</span><span class="o">&amp;</span><span class="n">resp</span><span class="p">);</span><span class="w">
+</span><span class="w">            </span><span class="p">})</span><span class="w">
+</span><span class="w">        </span><span class="p">})</span><span class="w">
+</span><span class="w">        </span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">|</span><span class="n">_</span><span class="o">|</span><span class="w"> </span><span class="p">())</span><span class="w">
+</span><span class="w">        </span><span class="p">.</span><span class="n">map_err</span><span class="p">(</span><span class="o">|</span><span class="n">e</span><span class="o">|</span><span class="w"> </span><span class="n">eprintln</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{:?}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">));</span><span class="w">
+</span><span class="w">
+</span><span class="w">    </span><span class="n">tokio</span>::<span class="n">run</span><span class="p">(</span><span class="n">fut</span><span class="p">);</span><span class="w">
+</span><span class="w">    </span><span class="nb">Ok</span><span class="p">(())</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>Here, we are resolving that <code>connect</code>, then writing the subscribe data to the Stream using <code>io::write_all</code>. After that&rsquo;s done we must read from the Stream in decode_response (the <code>{success:true}</code> response). And only then will we wait to receive the first event, and decode.</p>
+
+<p><code>decode_response</code> is a Future itself and higher-order. It takes a closure that receives a message type and buffer and presumably does something with the data.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">decode_response</span><span class="o">&lt;</span><span class="n">F</span><span class="o">&gt;</span><span class="p">(</span><span class="n">stream</span>: <span class="nc">UnixStream</span><span class="p">,</span><span class="w"> </span><span class="n">f</span>: <span class="nc">F</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">impl</span><span class="w"> </span><span class="n">Future</span><span class="o">&lt;</span><span class="n">Item</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UnixStream</span><span class="p">,</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io</span>::<span class="n">Error</span><span class="o">&gt;</span><span class="w">
+</span><span class="w"></span><span class="k">where</span><span class="w">
+</span><span class="w">    </span><span class="n">F</span>: <span class="nb">Fn</span><span class="p">(</span><span class="kt">u32</span><span class="p">,</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">u8</span><span class="o">&gt;</span><span class="p">),</span><span class="w">
+</span><span class="w"></span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">buf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="mi">14</span><span class="p">];</span><span class="w">
+</span><span class="w">    </span><span class="n">tokio</span>::<span class="n">io</span>::<span class="n">read_exact</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">).</span><span class="n">and_then</span><span class="p">(</span><span class="o">|</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">initial</span><span class="p">)</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="o">&amp;</span><span class="n">initial</span><span class="p">[</span><span class="mi">0</span><span class="p">..</span><span class="mi">6</span><span class="p">]</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">MAGIC</span><span class="p">.</span><span class="n">as_bytes</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="n">panic</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;Magic str not received&#34;</span><span class="p">);</span><span class="w">
+</span><span class="w">        </span><span class="p">}</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">payload_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LittleEndian</span>::<span class="n">read_u32</span><span class="p">(</span><span class="o">&amp;</span><span class="n">initial</span><span class="p">[</span><span class="mi">6</span><span class="p">..</span><span class="mi">10</span><span class="p">])</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">usize</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">evt_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LittleEndian</span>::<span class="n">read_u32</span><span class="p">(</span><span class="o">&amp;</span><span class="n">initial</span><span class="p">[</span><span class="mi">10</span><span class="p">..</span><span class="mi">14</span><span class="p">]);</span><span class="w">
+</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">buf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">payload_len</span><span class="p">];</span><span class="w">
+</span><span class="w">        </span><span class="n">tokio</span>::<span class="n">io</span>::<span class="n">read_exact</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">).</span><span class="n">and_then</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">|</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">)</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="n">f</span><span class="p">(</span><span class="n">evt_type</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">);</span><span class="w"> </span><span class="c1">// do something
+</span><span class="c1"></span><span class="w">            </span><span class="n">future</span>::<span class="n">ok</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span><span class="w">
+</span><span class="w">        </span><span class="p">})</span><span class="w">
+</span><span class="w">    </span><span class="p">})</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>We don&rsquo;t know the size of the message before we start reading it, but we do know that the first bit, <code>i3-ipc&lt;payload len&gt;&lt;msg type&gt;</code> is 14 bytes. 6 for <code>i3-ipc</code> and 4 each for the two u32&rsquo;s. What follows after that is the payload response and it could be any size. So we are delineating between the two parts of the message; the part of known size and the part with unknown size. We finish by returning the stream to potentially be used again.</p>
+
+<p>The major issue with this, besides basically not handling errors, is it only reads a single event. We want to listen to a stream of window change events. And if you think about it, that makes sense, we&rsquo;re returning a <code>Future</code> for <code>decode_response</code> when what we need to be doing is working with a <code>Stream</code>.</p>
+
+<h2 id="codecs">Codecs</h2>
+
+<p>I was stumped on this part. But a few options were available, and I think these are (broadly) the solution to writing tokio code in general:</p>
+
+<ul>
+<li>(1) Use combinators and abstract using functions and <code>impl Future</code></li>
+<li>(2) Implement custom <code>Future</code> and/or <code>Stream</code> types</li>
+<li>(3 - perhaps more specific to this problem) use <code>Encoder</code>/<code>Decoder</code> and write a codec</li>
+</ul>
+
+<p>I began reading some more tokio documentation and it seemed more and more like the thing I wanted to do was create a <a href="https://tokio.rs/docs/going-deeper/frames/">framed stream</a>. The example in the tokio docs is writing a protocol that splits input into frames by the newline delimiter <code>\n</code>. The i3 protocol is slightly more complex but not by a lot.</p>
+
+<p>As far as I can tell option 1 doesn&rsquo;t really work for <code>Stream</code>. By that I mean, it doesn&rsquo;t look like it&rsquo;s possible to return an <code>impl Stream</code> of i3 event responses. The path is to implement a <code>Future</code> to decode a single message, then build a <code>Stream</code> out of those futures which naturally leads us to option 2.</p>
+
+<p>I had a suspicion that by going through all that I&rsquo;d be re-building machinery that <code>Encoder</code> / <code>Decoder</code> do anyway. I did a GitHub search for <code>tokio_codec</code> and limited the search to Rust to try and find some examples. Most codecs appear to be unit structs, mine was no different:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">struct</span> <span class="nc">EventCodec</span><span class="p">;</span><span class="w">
+</span></code></pre></div>
+<p>After the initial success response from sending subscribe all our stream needs to do is decode messages and run the json parts through serde, therefore we only need <code>Decoder</code> for <code>EventCodec</code>.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">impl</span><span class="w"> </span><span class="n">Decoder</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">EventCodec</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">type</span> <span class="nc">Item</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">event</span>::<span class="n">Event</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="k">type</span> <span class="nc">Error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io</span>::<span class="n">Error</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">decode</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">src</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="n">BytesMut</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="nb">Option</span><span class="o">&lt;</span><span class="n">Self</span>::<span class="n">Item</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">io</span>::<span class="n">Error</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">src</span><span class="p">.</span><span class="n">len</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">14</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="o">&amp;</span><span class="n">src</span><span class="p">[</span><span class="mi">0</span><span class="p">..</span><span class="mi">6</span><span class="p">]</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">MAGIC</span><span class="p">.</span><span class="n">as_bytes</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="nb">Err</span><span class="p">(</span><span class="n">io</span>::<span class="n">Error</span>::<span class="n">new</span><span class="p">(</span><span class="w">
+</span><span class="w">                    </span><span class="n">io</span>::<span class="n">ErrorKind</span>::<span class="n">Other</span><span class="p">,</span><span class="w">
+</span><span class="w">                    </span><span class="n">format</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;Expected &#39;i3-ipc&#39; but received: {:?}&#34;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">src</span><span class="p">[</span><span class="mi">0</span><span class="p">..</span><span class="mi">6</span><span class="p">]),</span><span class="w">
+</span><span class="w">                </span><span class="p">));</span><span class="w">
+</span><span class="w">            </span><span class="p">}</span><span class="w">
+</span><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">payload_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LittleEndian</span>::<span class="n">read_u32</span><span class="p">(</span><span class="o">&amp;</span><span class="n">src</span><span class="p">[</span><span class="mi">6</span><span class="p">..</span><span class="mi">10</span><span class="p">])</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">usize</span><span class="p">;</span><span class="w">
+</span><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">evt_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LittleEndian</span>::<span class="n">read_u32</span><span class="p">(</span><span class="o">&amp;</span><span class="n">src</span><span class="p">[</span><span class="mi">10</span><span class="p">..</span><span class="mi">14</span><span class="p">]);</span><span class="w">
+</span><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="n">src</span><span class="p">.</span><span class="n">len</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">14</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">payload_len</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">                </span><span class="nb">Ok</span><span class="p">(</span><span class="nb">None</span><span class="p">)</span><span class="w">
+</span><span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">                </span><span class="kd">let</span><span class="w"> </span><span class="n">evt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">decode_event</span><span class="p">(</span><span class="n">evt_type</span><span class="p">,</span><span class="w"> </span><span class="n">src</span><span class="p">[</span><span class="mi">14</span><span class="p">..].</span><span class="n">as_mut</span><span class="p">().</span><span class="n">to_vec</span><span class="p">())</span><span class="o">?</span><span class="p">;</span><span class="w">
+</span><span class="w">                </span><span class="n">src</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"> </span><span class="c1">// !!
+</span><span class="c1"></span><span class="w">                </span><span class="nb">Ok</span><span class="p">(</span><span class="nb">Some</span><span class="p">(</span><span class="n">evt</span><span class="p">))</span><span class="w">
+</span><span class="w">            </span><span class="p">}</span><span class="w">
+</span><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="nb">Ok</span><span class="p">(</span><span class="nb">None</span><span class="p">)</span><span class="w">
+</span><span class="w">        </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>Our <code>Decoder</code> produces <code>Event</code> responses, which is the deserialized result of parsing some IPC payload, or an <code>Error</code>. Returning <code>Ok(None)</code> from <code>decode</code> signifies to tokio to continue consuming data. I&rsquo;m not sure if the length checking is necessary since in practice it seems like it only ever does a single read operation for the entire response (at least in my tests), but it seems right for a function that can say &ldquo;hey, I need more data&rdquo;.</p>
+
+<p>The first time I tried using this, it accepted a single event but decoded it infinitely. My console filled with the exact same event being processed again and again. After some <a href="https://stackoverflow.com/questions/55552090/tokio-framedread-for-each-called-indefinitely-for-single-response">stackoverflow</a> help I added <code>src.clear()</code>, to clear the buffer after successfully decoding the event and produce a single frame per event.</p>
+
+<p>You can use Decoders and Encoders to turn a <code>UnixStream</code> or <code>TcpStream</code> into frames using:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="kd">let</span><span class="w"> </span><span class="n">framed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FramedRead</span>::<span class="n">new</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">EvtCodec</span><span class="p">);</span><span class="w">
+</span><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="n">sender</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">framed</span><span class="w">
+</span><span class="w">    </span><span class="p">.</span><span class="n">for_each</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">|</span><span class="n">evt</span>: <span class="nc">event</span>::<span class="n">Event</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="c1">// do something
+</span><span class="c1"></span><span class="w">    </span><span class="p">})</span><span class="w">
+</span><span class="w">    </span><span class="p">.</span><span class="n">map_err</span><span class="p">(</span><span class="o">|</span><span class="n">err</span><span class="o">|</span><span class="w"> </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">err</span><span class="p">));</span><span class="w">
+</span><span class="w"></span><span class="n">tokio</span>::<span class="n">spawn</span><span class="p">(</span><span class="n">sender</span><span class="p">);</span><span class="w">
+</span></code></pre></div>
+<p>I connected this with the original <code>subscribe</code> function to produce:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">subscribe</span><span class="p">(</span><span class="w">
+</span><span class="w">    </span><span class="n">rt</span>: <span class="nc">tokio</span>::<span class="n">runtime</span>::<span class="n">current_thread</span>::<span class="n">Handle</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">tx</span>: <span class="nc">Sender</span><span class="o">&lt;</span><span class="n">event</span>::<span class="n">Event</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">events</span>: <span class="nb">Vec</span><span class="o">&lt;</span><span class="n">Subscribe</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">io</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">fut</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UnixStream</span>::<span class="n">connect</span><span class="p">(</span><span class="n">socket_path</span><span class="p">()</span><span class="o">?</span><span class="p">)</span><span class="w">
+</span><span class="w">        </span><span class="p">.</span><span class="n">and_then</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">|</span><span class="n">stream</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">buf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">subscribe_payload</span><span class="p">(</span><span class="n">events</span><span class="p">);</span><span class="w">
+</span><span class="w">            </span><span class="n">tokio</span>::<span class="n">io</span>::<span class="n">write_all</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">)</span><span class="w">
+</span><span class="w">        </span><span class="p">})</span><span class="w">
+</span><span class="w">        </span><span class="p">.</span><span class="n">and_then</span><span class="p">(</span><span class="o">|</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">_buf</span><span class="p">)</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="n">decode_response</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="o">|</span><span class="n">msg_type</span>: <span class="kt">u32</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span>: <span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">u8</span><span class="o">&gt;|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">                </span><span class="kd">let</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">String</span>::<span class="n">from_utf8</span><span class="p">(</span><span class="n">buf</span><span class="p">.</span><span class="n">to_vec</span><span class="p">()).</span><span class="n">unwrap</span><span class="p">();</span><span class="w">
+</span><span class="w">                </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{:?}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">);</span><span class="w"> </span><span class="c1">// {success:true}
+</span><span class="c1"></span><span class="w">                </span><span class="n">dbg</span><span class="o">!</span><span class="p">(</span><span class="n">msg_type</span><span class="p">);</span><span class="w"> </span><span class="c1">// 2 (for subscribe)
+</span><span class="c1"></span><span class="w">            </span><span class="p">})</span><span class="w">
+</span><span class="w">        </span><span class="p">})</span><span class="w">
+</span><span class="w">        </span><span class="p">.</span><span class="n">and_then</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">|</span><span class="n">stream</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">framed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FramedRead</span>::<span class="n">new</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">EvtCodec</span><span class="p">);</span><span class="w">
+</span><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">sender</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">framed</span><span class="w">
+</span><span class="w">                </span><span class="p">.</span><span class="n">for_each</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">|</span><span class="n">evt</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">                    </span><span class="c1">// do something with each event
+</span><span class="c1"></span><span class="w">                    </span><span class="kd">let</span><span class="w"> </span><span class="n">tx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tx</span><span class="p">.</span><span class="n">clone</span><span class="p">();</span><span class="w">
+</span><span class="w">                    </span><span class="n">tx</span><span class="p">.</span><span class="n">send</span><span class="p">(</span><span class="n">evt</span><span class="p">)</span><span class="w">
+</span><span class="w">                        </span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">|</span><span class="n">_</span><span class="o">|</span><span class="w"> </span><span class="p">())</span><span class="w">
+</span><span class="w">                        </span><span class="p">.</span><span class="n">map_err</span><span class="p">(</span><span class="o">|</span><span class="n">e</span><span class="o">|</span><span class="w"> </span><span class="n">io</span>::<span class="n">Error</span>::<span class="n">new</span><span class="p">(</span><span class="n">io</span>::<span class="n">ErrorKind</span>::<span class="n">BrokenPipe</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">))</span><span class="w">
+</span><span class="w">                </span><span class="p">})</span><span class="w">
+</span><span class="w">                </span><span class="p">.</span><span class="n">map_err</span><span class="p">(</span><span class="o">|</span><span class="n">err</span><span class="o">|</span><span class="w"> </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">err</span><span class="p">));</span><span class="w">
+</span><span class="w">            </span><span class="n">tokio</span>::<span class="n">spawn</span><span class="p">(</span><span class="n">sender</span><span class="p">);</span><span class="w"> </span><span class="c1">// !
+</span><span class="c1"></span><span class="w">            </span><span class="nb">Ok</span><span class="p">(())</span><span class="w">
+</span><span class="w">        </span><span class="p">})</span><span class="w">
+</span><span class="w">        </span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">|</span><span class="n">_</span><span class="o">|</span><span class="w"> </span><span class="p">())</span><span class="w">
+</span><span class="w">        </span><span class="p">.</span><span class="n">map_err</span><span class="p">(</span><span class="o">|</span><span class="n">e</span><span class="o">|</span><span class="w"> </span><span class="n">eprintln</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{:?}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">));</span><span class="w">
+</span><span class="w">
+</span><span class="w">    </span><span class="n">tokio</span>::<span class="n">spawn</span><span class="p">(</span><span class="n">fut</span><span class="p">);</span><span class="w">
+</span><span class="w">    </span><span class="nb">Ok</span><span class="p">(())</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>I decided to pass in a <code>Sender</code> and use a <code>futures::mpsc::channel</code> to communicate the events received over the socket to elsewhere. I think this is a nice approach and allows this function (after it&rsquo;s been spruced up) to potentially be exported as a library function and have users pass the Sender in and listen on the other side of the channel for responses.</p>
+
+<p>There&rsquo;s an extra <code>spawn</code> for the bit that runs <code>sender</code>. This is because <code>sender</code> is still a Future. If we return it instead of spawning it, then <code>for_each</code> would wait for it to complete before it accepts the next response. That&rsquo;s probably not a big deal here since i3 will probably only send a single event at a time, but there&rsquo;s not much point in doing all this work if we don&rsquo;t enable ourselves to actually use the concurrency provided.</p>
+
+<h2 id="manually-implementing-future">Manually Implementing Future</h2>
+
+<p>Tokio&rsquo;s IO is built on top of <code>AsyncRead</code> and <code>AsyncWrite</code> in much the same way that std&rsquo;s IO is built on top if <code>Read</code> and <code>Write</code>. In fact, you <code>AsyncRead</code>/<code>AsyncWrite</code> are super traits of <code>Read</code> &amp; <code>Write</code>, respectively. To compare <code>impl Trait</code> to other solutions to turn <code>decode_response</code> into a handcoded <code>Future</code>. If you recall; <code>decode_response</code> is split into two distinct parts based on deciding us finding the length of the message to be read. I found it difficult to get that functionality into a hand written future without <code>Read::read_exact</code>, until I found <a href="https://tokio.rs/docs/going-deeper/io/">ReadExact</a> in the tokio docs, which let me to <code>tokio_io::io::read_exact</code> which just returns a type that implements <code>Future</code> (so we can call <code>poll</code> on it).</p>
+
+<p>Here&rsquo;s what <code>decode_response</code> as custom future looks like:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="cp">#[derive(Debug)]</span><span class="w">
+</span><span class="w"></span><span class="k">pub</span><span class="w"> </span><span class="k">struct</span> <span class="nc">I3Msg</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">stream</span>: <span class="nc">UnixStream</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">_marker</span>: <span class="nc">PhantomData</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">impl</span><span class="o">&lt;</span><span class="n">D</span>: <span class="nc">DeserializeOwned</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Future</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">I3Msg</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">type</span> <span class="nc">Item</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MsgResponse</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;</span><span class="p">;</span><span class="w"> </span><span class="c1">// holds msg type and &#39;D&#39;
+</span><span class="c1"></span><span class="w">    </span><span class="k">type</span> <span class="nc">Error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io</span>::<span class="n">Error</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">poll</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">Poll</span><span class="o">&lt;</span><span class="n">Self</span>::<span class="n">Item</span><span class="p">,</span><span class="w"> </span><span class="n">io</span>::<span class="n">Error</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">buf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">0_</span><span class="k">u8</span><span class="p">;</span><span class="w"> </span><span class="mi">14</span><span class="p">];</span><span class="w"> </span><span class="c1">// buffer for the first bit
+</span><span class="c1"></span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="p">(</span><span class="n">rdr</span><span class="p">,</span><span class="w"> </span><span class="n">initial</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">try_ready</span><span class="o">!</span><span class="p">(</span><span class="n">read_exact</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">.</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">buf</span><span class="p">).</span><span class="n">poll</span><span class="p">());</span><span class="w"> </span><span class="c1">// this returns the reader and the written-to buffer
+</span><span class="c1"></span><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="o">&amp;</span><span class="n">initial</span><span class="p">[</span><span class="mi">0</span><span class="p">..</span><span class="mi">6</span><span class="p">]</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">MAGIC</span><span class="p">.</span><span class="n">as_bytes</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="n">panic</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;Magic str not received&#34;</span><span class="p">);</span><span class="w">
+</span><span class="w">        </span><span class="p">}</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">payload_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LittleEndian</span>::<span class="n">read_u32</span><span class="p">(</span><span class="o">&amp;</span><span class="n">initial</span><span class="p">[</span><span class="mi">6</span><span class="p">..</span><span class="mi">10</span><span class="p">])</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">usize</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">msg_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LittleEndian</span>::<span class="n">read_u32</span><span class="p">(</span><span class="o">&amp;</span><span class="n">initial</span><span class="p">[</span><span class="mi">10</span><span class="p">..</span><span class="mi">14</span><span class="p">]);</span><span class="w">
+</span><span class="w">        </span><span class="c1">// get the payload now
+</span><span class="c1"></span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">buf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">0_</span><span class="k">u8</span><span class="p">;</span><span class="w"> </span><span class="n">payload_len</span><span class="p">];</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="p">(</span><span class="n">_rdr</span><span class="p">,</span><span class="w"> </span><span class="n">payload</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">try_ready</span><span class="o">!</span><span class="p">(</span><span class="n">read_exact</span><span class="p">(</span><span class="n">rdr</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">buf</span><span class="p">).</span><span class="n">poll</span><span class="p">());</span><span class="w">
+</span><span class="w">
+</span><span class="w">        </span><span class="nb">Ok</span><span class="p">(</span><span class="n">Async</span>::<span class="n">Ready</span><span class="p">(</span><span class="n">MsgResponse</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="n">msg_type</span>: <span class="nc">msg_type</span><span class="p">.</span><span class="n">into</span><span class="p">(),</span><span class="w">
+</span><span class="w">            </span><span class="n">body</span>: <span class="nc">serde_json</span>::<span class="n">from_slice</span><span class="p">(</span><span class="o">&amp;</span><span class="n">payload</span><span class="p">[..])</span><span class="o">?</span><span class="p">,</span><span class="w">
+</span><span class="w">        </span><span class="p">}))</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<h2 id="conclusion">Conclusion</h2>
+
+<p>I started this tokio adventure feeling very much like I was in over my head. However the more time I spent interacting with the various bits of the ecosystem the more I realized the parts that seemed obscure and magic were very much non-magical. The Future and Stream traits, along with the tokio ecosystem built on top of it are very well thought out and while difficult initially, are pretty damn cool and not so bad after you spend some time with them. I also noticed that after I got past a certain point in my understanding of how everything fit together I was making orders of magnitude more progress than when I started.</p>
+
+<p>I&rsquo;m not quite done building this library and polishing things off, I will write a part 2 after everything is completed. I am by no means a tokio expert so if anyone catches any errors or has some tips, I&rsquo;d love to hear the feedback. One thing I&rsquo;m still a bit uncertain about is threading errors through the various futures. I hope this was helpful to someone. &lsquo;Till next time</p>
+
+<p>Cheers</p>
+
+
+        
+
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://leshow.github.io/post/unit_type_pattern/" data-toggle="tooltip" data-placement="top" title="Unit Type Params">&larr; Previous Post</a>
+            </li>
+          
+          
+        </ul>
+      
+
+
+      
+        
+        
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="mailto:cameron.evan@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://github.com/leshow" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/evan_cam_" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://linkedin.com/in/evan-cameron" title="LinkedIn">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-linkedin fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              <a href="leshow.github.io">Evan Cameron</a>
+            
+          
+
+          &nbsp;&bull;&nbsp;
+          2019
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://leshow.github.io">Esoterically Typed</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.54.0</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.js" integrity="sha384-/y1Nn9+QQAipbNQWU65krzJralCnuOasHncUFXGkdwntGeSvQicrYkiUBwsgUqc1" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/contrib/auto-render.min.js" integrity="sha384-dq1/gEHSxPZQ7DdrM82ID4YVol9BYyU7GbWlIwnwyPzotpoc57wDw/guX8EaYGPx" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/main.js"></script>
+<script src="https://leshow.github.io/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> $(document).ready(function() {$("pre.chroma").css("padding","0");}); </script><script> renderMathInElement(document.body); </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+  </body>
+</html>
+
