@@ -147,7 +147,7 @@ impl Decoder for EventCodec {
 
 Our `Decoder` produces `Event` responses, which is the deserialized result of parsing some IPC payload, or an `Error`. Returning `Ok(None)` from `decode` signifies to tokio to continue consuming data. I'm not sure if the length checking is necessary since in practice it seems like it only ever does a single read operation for the entire response (at least in my tests), but it seems right for a function that can say "hey, I need more data".
 
-The first time I tried using this, it accepted a single event but decoded it infinitely. My console filled with the exact same event being processed again and again. After some stackoverflow help I added `src.clear()`, to clear the buffer after successfully decoding the event and produce a single frame per event.
+The first time I tried using this, it accepted a single event but decoded it infinitely. My console filled with the exact same event being processed again and again. After some [stackoverflow](https://stackoverflow.com/questions/55552090/tokio-framedread-for-each-called-indefinitely-for-single-response) help I added `src.clear()`, to clear the buffer after successfully decoding the event and produce a single frame per event.
 
 You can use Decoders and Encoders to turn a `UnixStream` or `TcpStream` into frames using:
 
