@@ -1,7 +1,7 @@
 ---
 title: "Protocols in Tokio (i3 IPC)"
-date: 2019-04-07T18:53:18-04:00
-draft: true
+date: 2019-04-09T09:53:18-04:00
+draft: false
 ---
 
 There's a dearth of blog posts online that cover the details of implementing a custom protocol in tokio, at least that I've found. I'm going to cover some of the steps I went through in implementing an async version i3wm's [IPC](https://i3wm.org/docs/ipc.html). Granted, I've not finished my library to a point I'm comfortable releasing it, but I hope I can provide some examples for the aspiring async IO enthusiast that I wish I had when I started. A basic knowledge of `futures` and `tokio` will be helpful.
@@ -22,7 +22,7 @@ Without further ado, let's get to the implementation.
 
 I think the most obvious place to start is using the built in combinators that come with `futures` and `tokio`. With the advent of Rust 1.26 and impl Trait we can return this as a `impl Future<Item=(), Error=()>`.
 
-While tokio has some good examples using [TcpListener](https://tokio.rs/docs/io/overview/) for processing incoming tcp connections, I couldn't find much for bidirectional communication using `UnixStream`. The first challenge I found, being naive of the tokio ecosystem, is that `tokio_uds::UnixStream` returns a `ConnectFuture`. Rather than actually connecting to anything this is a type which implements Future (rather obvious in hindsight) that must be polled in order to actually connect to the socket.
+While tokio has some good examples using [TcpListener](https://tokio.rs/docs/io/overview/) for processing incoming tcp connections, I couldn't find much for bidirectional communication using `UnixStream`. The first challenge I found, being naive of the tokio ecosystem, is that `tokio_uds::UnixStream::connect` returns a `ConnectFuture`. Rather than actually connecting to anything this is a type which implements Future (rather obvious in hindsight) that must be polled in order to actually connect to the socket.
 
 Therefore, we must use `and_then` to access the `UnixStream` that will be resolved after the `ConnectFuture` runs:
 
@@ -207,9 +207,9 @@ I decided to pass in a `Sender` and use a `futures::mpsc::channel` to communicat
 
 There's an extra `spawn` for the bit that runs `sender`. This is because `sender` is still a Future. If we return it instead of spawning it, then `for_each` would wait for it to complete before it accepts the next response. That's probably not a big deal here since i3 will probably only send a single event at a time, but there's not much point in doing all this work if we don't enable ourselves to actually use the concurrency provided.
 
-## Manual Futures
+## Manually Implementing Future
 
-Tokio's IO is built on top of `AsyncRead` and `AsyncWrite` in much the same way that std's IO is build on top if `Read` and `Write`. In fact, you `AsyncRead`/`AsyncWrite` are super traits of `Read` & `Write`, respectively. To compare `impl Trait` to other solutions to turn `decode_response` into a handcoded `Future`. If you recall; `decode_response` is split into two distinct parts based on deciding us finding the length of the message to be read. I found it difficult to get that functionality into a hand written future without `Read::read_exact`, until I found [ReadExact](https://tokio.rs/docs/going-deeper/io/) in the tokio docs, which let me to `tokio_io::io::read_exact` which just returns a type that implements `Future` (so we can call `poll` on it).
+Tokio's IO is built on top of `AsyncRead` and `AsyncWrite` in much the same way that std's IO is built on top if `Read` and `Write`. In fact, you `AsyncRead`/`AsyncWrite` are super traits of `Read` & `Write`, respectively. To compare `impl Trait` to other solutions to turn `decode_response` into a handcoded `Future`. If you recall; `decode_response` is split into two distinct parts based on deciding us finding the length of the message to be read. I found it difficult to get that functionality into a hand written future without `Read::read_exact`, until I found [ReadExact](https://tokio.rs/docs/going-deeper/io/) in the tokio docs, which let me to `tokio_io::io::read_exact` which just returns a type that implements `Future` (so we can call `poll` on it).
 
 Here's what `decode_response` as custom future looks like:
 
@@ -221,12 +221,11 @@ pub struct I3Msg<D> {
 }
 
 impl<D: DeserializeOwned> Future for I3Msg<D> {
-    type Item = MsgResponse<D>;
+    type Item = MsgResponse<D>; // holds msg type and 'D'
     type Error = io::Error;
     fn poll(&mut self) -> Poll<Self::Item, io::Error> {
         let mut buf = [0_u8; 14]; // buffer for the first bit
         let (rdr, initial) = try_ready!(read_exact(&self.stream, &mut buf).poll()); // this returns the reader and the written-to buffer
-
         if &initial[0..6] != MAGIC.as_bytes() {
             panic!("Magic str not received");
         }
