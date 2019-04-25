@@ -8,19 +8,15 @@ I recently published my first Haskell [package](https://hackage.haskell.org/pack
 
 It probably wasn't worth the aggravation; my estimation is the cross section of Haskell users that also use tiling window managers would show a strong overlap with XMonad, not i3, but here we are. At least it gave an interest opportunity for comparison with a library in my other favorite language: Rust.
 
-While there was no existing i3 IPC lib for Haskell, Rust does have a prime candidate: [i3ipc-rs](https://github.com/tmerr/i3ipc-rs/). It's a great library, but my guess is it was written a while ago because looking through it's source, most of the serde types could now be auto-derived instead of handwritten.
+The i3 package I wrote for Haskell was a warm up in a lot of ways for writing one in Rust using tokio. I've [completed that also](https://crates.io/crates/tokio-i3ipc) As a result, I've re-written all of the i3 IPC types a twice now in both Haskell and Rust. Once using `aeson`, then with `serde`. Since Haskell and Rust share a lot of similarities in their type systems; typeclasses/traits, deriving/derive, sum types/enum, etc. I thought it would be cool to take a look at these two libraries that fill the same niche in different languages.
 
-I'm working on a version of `i3ipc-rs` that uses tokio (essentially a copy of the Haskell library but in Rust/tokio), to compliment a fork of of another library that I converted to async IO. As a result, I've re-written all of the i3 IPC types a second time in Rust using serde, this library I plan to release standalone (as part of a cargo workspace) as soon as the accompanying project is finished, hopefully no one will ever have to write the types a third.
-
-Enough exposition, let's get to the comparisons shall we?
-
-## Field Names
+## Approach to Field Names
 
 ### Haskell
 
-I'm not sure if aeson was one of the first libraries to really popularize the whole auto-derived instances thing (I mean for programming in general, not just Haskell), but it certainly _feels_ like it. IMO, serde takes a lot of cues from aeson and improves on them.
+I'm not sure if aeson was one of the first libraries to really popularize the whole auto-derived instances thing, but it certainly _feels_ like it, it was first released in 2011. The `DeriveGeneric` extension it relies upon was first released in GHC 7.2 in November of 2011.
 
-In aeson, you can derive an instance with the help of a few language extensions (taken from `i3ipc`):
+In aeson, defining a data type and deriving looks a bit magical in that you need to perform the correct incantations:
 
 ```haskell
 {-# LANGUAGE DeriveGeneric, BangPatterns #-}
@@ -32,12 +28,11 @@ data WorkspaceEvent = WorkspaceEvent {
     , wrk_current :: !(Maybe Node)
     , wrk_old :: !(Maybe Node)
 } deriving (Eq, Generic, Show)
-
 ```
 
-A couple things to note here. Firstly, the bang (!) patterns annotate the field as strict rather than lazy. And second, records in Haskell are a bit ornery on account of field names polluting the global namespace. As a result, I prefixed all of the field names with a keyword and underscore. The issue now, for the purposes of derivation, is that my field names no longer match the JSON keys in the structure.
+A couple things to note here. Firstly, the bang (!) patterns annotate the field as strict rather than lazy, they aren't required, but I didn't see any point in having lazy fields in my data structures. Second, records in Haskell are a bit ornery on account of field names polluting the global namespace. As a result, I prefixed all of the field names with a keyword and underscore. The issue now, for the purposes of derivation, is that my field names no longer match the JSON keys in the structure; so the completely automatic deriving won't provide an instance that matches my real world structure.
 
-Aeson has a solution for that:
+Aeson's solution for that:
 
 ```haskell
 instance ToJSON WorkspaceEvent where
@@ -47,13 +42,31 @@ instance FromJSON WorkspaceEvent where
     parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = drop 4 }
 ```
 
-With this, when serializing to/from JSON, aeson will drop the first 4 characters and the names will match.
+With this, when serializing to/from JSON, aeson will drop the first 4 characters and the names will again match.
+
+If I didn't have prefixed field names, creating the instances can be completely automated:
+
+```haskell
+{-# LANGUAGE DeriveGeneric, BangPatterns #-}
+
+import GHC.Generics
+
+data WorkspaceEvent = WorkspaceEvent {
+    change :: !WorkspaceChange
+    , current :: !(Maybe Node)
+    , old :: !(Maybe Node)
+} deriving (Eq, Generic, Show, FromJSON, ToJSON)
+```
+
+This makes use of the generic machinery provided by the language extension `DeriveGeneric`, this allows us to get a (surprise) generic representation of data structures that libraries can plug in to to write instances. `Eq` and `Show` are part of the built in derivable typeclasses in GHC (others include `Ord`, `Bounded`, `Read`).
 
 ### Rust
 
-Rust has an advantage here (IMO) that struct fields are locally namespaced. That gets around the antecedent keyword above. In Rust the derive mechanism is a special kind of macro called a proc macro. It looks like this:
+Serde takes a similar approach to deriving instances, it had it's first "pre-release" in 2016, and shipped 1.0 April of 2017 after rustc stable added support for the procedural macros that enable it's own derive mechanism (I believe this was Rust 1.15). In Rust, struct fields are locally namespaced so the antecedent keyword used above isn't required. In Rust the derive mechanism is a special kind of macro called a proc macro. It looks like this:
 
 ```rust
+use serde::{Serialize, Deserialize};
+
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 pub struct WorkspaceData {
     pub change: WorkspaceChange,
@@ -62,9 +75,9 @@ pub struct WorkspaceData {
 }
 ```
 
-`Serialize` and `Deserialize` come from serde, the other traits I'm deriving are part of Rust's std library and are among the 6 or 7 derivable traits for a struct. In this regard Rust is very similar to Haskell.
+`Serialize` and `Deserialize` come from serde, the other traits I'm deriving are part of Rust's std library and are among the half dozen derivable traits for a struct. In this regard Rust is very similar to Haskell. An interesting thing to note is Rust's trait to describe equality is split into `PartialEq` and it's supertrait `Eq`. The delineation helps when modelling floating point numbers, of which `PartialEq` is a member.
 
-You may have noticed I didn't need to make any modifications to get the names on my struct to match the actual JSON, but if I did, serde has me covered there too with more proc macros:
+You may have noticed I didn't need to make any modifications to get the names on my struct to match the actual JSON, but if I did, I could annotate the individual members rather than writing a minimal implementation:
 
 ```rust
 #[derive(Deserialize, Serialize, PartialEq, Clone, Debug)]
