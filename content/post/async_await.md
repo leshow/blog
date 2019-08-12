@@ -1,7 +1,7 @@
 ---
 title: "Updating to Async/Await"
-date: 2019-08-09T13:52:08-04:00
-draft: true
+date: 2019-08-12T09:30:08-04:00
+draft: false
 ---
 
 Unless you've been living under a rock; you know async/await is coming to rust stable. My last post was about implementing a simple protocol using manual futures, and interacting with [tokio](https://github.com/tokio-rs/). It's only fitting, then, that I update the lib that post was inspired by to async/await and report back on my findings. If you're curious about my library or you use the window manager i3, it's available [here](https://github.com/leshow/tokio-i3ipc/) or on crates under [tokio-i3ipc](https://crates.io/crates/tokio-i3ipc). The version discussed here is currently unpublished, I'm waiting for the syntax to be released on stable and tokio to push their new version.
