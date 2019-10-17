@@ -1,5 +1,5 @@
 ---
-title: "Rotary Encoder in Embedded Rust"
+title: "Rotary Encoders in Embedded Rust"
 date: 2019-10-16T20:31:51-04:00
 draft: false
 ---
@@ -40,12 +40,12 @@ The key thing to notice here is that they are 90° out of step.
 
 The implementation is fairly straightforward. If we consider the square waves from the previous section and those that naturally follow from turning the other direction, we can construct a truth table of the current state/old state to determine whether a turn occurred and which way.
 
-| Current | Old |        Direction |
-| ------- | :-: | ---------------: |
-| 00      | 01  |        Clockwise |
-| 01      | 11  |        Clockwise |
-| 10      | 00  |        Clockwise |
-| 11      | 10  |        Clockwise |
+| Current | Old |         Direction |
+| ------- | :-: | ----------------: |
+| 00      | 01  |         Clockwise |
+| 01      | 11  |         Clockwise |
+| 10      | 00  |         Clockwise |
+| 11      | 10  |         Clockwise |
 | 00      | 10  | Counter-Clockwise |
 | 01      | 00  | Counter-Clockwise |
 | 10      | 11  | Counter-Clockwise |
