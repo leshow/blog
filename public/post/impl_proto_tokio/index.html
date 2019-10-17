@@ -22,7 +22,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Esoterically Typed" />
 
-  <meta name="generator" content="Hugo 0.48" />
+  <meta name="generator" content="Hugo 0.54.0" />
   <link rel="canonical" href="https://leshow.github.io/post/impl_proto_tokio/" />
   <link rel="alternate" href="https://leshow.github.io/index.xml" type="application/rss+xml" title="Esoterically Typed">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.css" integrity="sha384-wITovz90syo1dJWVh32uuETPVEtGigN07tkttEqPv+uR2SE/mbQcG7ATL28aI9H0" crossorigin="anonymous">
@@ -223,7 +223,7 @@ if (!doNotTrack) {
 </span><span class="w">
 </span><span class="w"></span><span class="c1">// and of course, to actually run it all
 </span><span class="c1"></span><span class="n">tokio</span>::<span class="n">run</span><span class="p">(</span><span class="n">fut</span><span class="p">);</span><span class="w">
-</span><span class="w"></span></code></pre></div>
+</span></code></pre></div>
 <p>So, the back and forth looks something like this:</p>
 <div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">subscribe</span><span class="p">(</span><span class="n">events</span>: <span class="nb">Vec</span><span class="o">&lt;</span><span class="n">Event</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">io</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
 </span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">fut</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UnixStream</span>::<span class="n">connect</span><span class="p">(</span><span class="n">socket_path</span><span class="p">()</span><span class="o">?</span><span class="p">)</span><span class="w">
@@ -250,7 +250,7 @@ if (!doNotTrack) {
 </span><span class="w">    </span><span class="n">tokio</span>::<span class="n">run</span><span class="p">(</span><span class="n">fut</span><span class="p">);</span><span class="w">
 </span><span class="w">    </span><span class="nb">Ok</span><span class="p">(())</span><span class="w">
 </span><span class="w"></span><span class="p">}</span><span class="w">
-</span><span class="w"></span></code></pre></div>
+</span></code></pre></div>
 <p>Here, we are resolving that <code>connect</code>, then writing the subscribe data to the Stream using <code>io::write_all</code>. After that&rsquo;s done we must read from the Stream in decode_response (the <code>{success:true}</code> response). And only then will we wait to receive the first event, and decode.</p>
 
 <p><code>decode_response</code> is a Future itself and higher-order. It takes a closure that receives a message type and buffer and presumably does something with the data.</p>
@@ -273,7 +273,7 @@ if (!doNotTrack) {
 </span><span class="w">        </span><span class="p">})</span><span class="w">
 </span><span class="w">    </span><span class="p">})</span><span class="w">
 </span><span class="w"></span><span class="p">}</span><span class="w">
-</span><span class="w"></span></code></pre></div>
+</span></code></pre></div>
 <p>We don&rsquo;t know the size of the message before we start reading it, but we do know that the first bit, <code>i3-ipc&lt;payload len&gt;&lt;msg type&gt;</code> is 14 bytes. 6 for <code>i3-ipc</code> and 4 each for the two u32&rsquo;s. What follows after that is the payload response and it could be any size. So we are delineating between the two parts of the message; the part of known size and the part with unknown size. We finish by returning the stream to potentially be used again.</p>
 
 <p>The major issue with this, besides basically not handling errors, is it only reads a single event. We want to listen to a stream of window change events. And if you think about it, that makes sense, we&rsquo;re returning a <code>Future</code> for <code>decode_response</code> when what we need to be doing is working with a <code>Stream</code>.</p>
@@ -294,7 +294,7 @@ if (!doNotTrack) {
 
 <p>I had a suspicion that by going through all that I&rsquo;d be re-building machinery that <code>Encoder</code> / <code>Decoder</code> do anyway. I did a GitHub search for <code>tokio_codec</code> and limited the search to Rust to try and find some examples. Most codecs appear to be unit structs, mine was no different:</p>
 <div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">struct</span> <span class="nc">EventCodec</span><span class="p">;</span><span class="w">
-</span><span class="w"></span></code></pre></div>
+</span></code></pre></div>
 <p>After the initial success response from sending subscribe all our stream needs to do is decode messages and run the json parts through serde, therefore we only need <code>Decoder</code> for <code>EventCodec</code>.</p>
 <div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">impl</span><span class="w"> </span><span class="n">Decoder</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">EventCodec</span><span class="w"> </span><span class="p">{</span><span class="w">
 </span><span class="w">    </span><span class="k">type</span> <span class="nc">Item</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">event</span>::<span class="n">Event</span><span class="p">;</span><span class="w">
@@ -321,7 +321,7 @@ if (!doNotTrack) {
 </span><span class="w">        </span><span class="p">}</span><span class="w">
 </span><span class="w">    </span><span class="p">}</span><span class="w">
 </span><span class="w"></span><span class="p">}</span><span class="w">
-</span><span class="w"></span></code></pre></div>
+</span></code></pre></div>
 <p>Our <code>Decoder</code> produces <code>Event</code> responses, which is the deserialized result of parsing some IPC payload, or an <code>Error</code>. Returning <code>Ok(None)</code> from <code>decode</code> signifies to tokio to continue consuming data. I&rsquo;m not sure if the length checking is necessary since in practice it seems like it only ever does a single read operation for the entire response (at least in my tests), but it seems right for a function that can say &ldquo;hey, I need more data&rdquo;.</p>
 
 <p>The first time I tried using this, it accepted a single event but decoded it infinitely. My console filled with the exact same event being processed again and again. After some <a href="https://stackoverflow.com/questions/55552090/tokio-framedread-for-each-called-indefinitely-for-single-response">stackoverflow</a> help I added <code>src.clear()</code>, to clear the buffer after successfully decoding the event and produce a single frame per event.</p>
@@ -329,7 +329,7 @@ if (!doNotTrack) {
 <p><strong>Edit</strong>: The correct thing to do here is not to <code>clear</code> the frame but instead <code>advance</code> it as described by a very helpful user on the rust <a href="https://www.reddit.com/r/rust/comments/bb7m1u/protocols_in_tokio_i3_ipc/ekh9rnq/">subreddit</a>. So, that line should read:</p>
 <div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="kd">let</span><span class="w"> </span><span class="n">evt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...;</span><span class="w">
 </span><span class="w"></span><span class="n">src</span><span class="p">.</span><span class="n">advance</span><span class="p">(</span><span class="mi">14</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">payload_len</span><span class="p">);</span><span class="w">
-</span><span class="w"></span></code></pre></div>
+</span></code></pre></div>
 <p>You can use <code>Decoder</code>s and <code>Encoder</code>s to turn a <code>UnixStream</code> or <code>TcpStream</code> into frames using:</p>
 <div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="kd">let</span><span class="w"> </span><span class="n">framed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FramedRead</span>::<span class="n">new</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">EventCodec</span><span class="p">);</span><span class="w">
 </span><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="n">sender</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">framed</span><span class="w">
@@ -338,7 +338,7 @@ if (!doNotTrack) {
 </span><span class="c1"></span><span class="w">    </span><span class="p">})</span><span class="w">
 </span><span class="w">    </span><span class="p">.</span><span class="n">map_err</span><span class="p">(</span><span class="o">|</span><span class="n">err</span><span class="o">|</span><span class="w"> </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">err</span><span class="p">));</span><span class="w">
 </span><span class="w"></span><span class="n">tokio</span>::<span class="n">spawn</span><span class="p">(</span><span class="n">sender</span><span class="p">);</span><span class="w">
-</span><span class="w"></span></code></pre></div>
+</span></code></pre></div>
 <p>I connected this with the original <code>subscribe</code> function to produce:</p>
 <div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">subscribe</span><span class="p">(</span><span class="w">
 </span><span class="w">    </span><span class="n">rt</span>: <span class="nc">tokio</span>::<span class="n">runtime</span>::<span class="n">current_thread</span>::<span class="n">Handle</span><span class="p">,</span><span class="w">
@@ -377,7 +377,7 @@ if (!doNotTrack) {
 </span><span class="w">    </span><span class="n">tokio</span>::<span class="n">spawn</span><span class="p">(</span><span class="n">fut</span><span class="p">);</span><span class="w">
 </span><span class="w">    </span><span class="nb">Ok</span><span class="p">(())</span><span class="w">
 </span><span class="w"></span><span class="p">}</span><span class="w">
-</span><span class="w"></span></code></pre></div>
+</span></code></pre></div>
 <p>I decided to pass in a <code>Sender</code> and use a <code>futures::mpsc::channel</code> to communicate the events received over the socket to elsewhere. I think this is a nice approach and allows this function (after it&rsquo;s been spruced up) to potentially be exported as a library function and have users pass the Sender in and listen on the other side of the channel for responses.</p>
 
 <p>There&rsquo;s an extra <code>spawn</code> for the bit that runs <code>sender</code>. This is because <code>sender</code> is still a Future. If we return it instead of spawning it, then <code>for_each</code> would wait for it to complete before it accepts the next response. That&rsquo;s probably not a big deal here since i3 will probably only send a single event at a time, but there&rsquo;s not much point in doing all this work if we don&rsquo;t enable ourselves to actually use the concurrency provided.</p>
@@ -414,7 +414,7 @@ if (!doNotTrack) {
 </span><span class="w">        </span><span class="p">}))</span><span class="w">
 </span><span class="w">    </span><span class="p">}</span><span class="w">
 </span><span class="w"></span><span class="p">}</span><span class="w">
-</span><span class="w"></span></code></pre></div>
+</span></code></pre></div>
 <h2 id="conclusion">Conclusion</h2>
 
 <p>When I started this tokio adventure and felt very much like I was in over my head. However, the more time I spent interacting with the various bits of the ecosystem the more I realized the parts that seemed obscure and magic were very much non-magical. The <code>Future</code> and <code>Stream</code> traits, along with the tokio and <code>AsyncRead</code>/<code>AsyncWrite</code> and the ecosystem built on top of that feel well thought out and logical; though not without initial difficulty. I also noticed that after I got past a certain point in my understanding of how everything fit together I was making orders of magnitude more progress than when I started, and more importantly I was having fun again.</p>
@@ -511,7 +511,7 @@ if (!doNotTrack) {
         </p>
         
         <p class="credits theme-by text-muted">
-          <a href="http://gohugo.io">Hugo v0.48</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          <a href="http://gohugo.io">Hugo v0.54.0</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
           
         </p>
       </div>

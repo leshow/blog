@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>Rotary Encoder in Embedded Rust</title>
+  <meta property="og:title" content="Rotary Encoder in Embedded Rust" />
+  <meta name="twitter:title" content="Rotary Encoder in Embedded Rust" />
+  <meta name="description" content="Recently, I&rsquo;ve been trying to learn more about electronics and embedded development. Maybe I&rsquo;m just tired of operating purely in the virtual, but there&rsquo;s something cool about being able to physically put together a circuit and push a button to make something happen. I went through the usual Arduino resources before seeing what Rust had to offer. I&rsquo;m happy to report there&rsquo;s some really good material out there.
+ Discovery book Rust Embedded book Real Time For the Masses  If you&rsquo;re new to embedded (but not new to Rust), I&rsquo;d recommend the Discovery book as your jumping off point.">
+  <meta property="og:description" content="Recently, I&rsquo;ve been trying to learn more about electronics and embedded development. Maybe I&rsquo;m just tired of operating purely in the virtual, but there&rsquo;s something cool about being able to physically put together a circuit and push a button to make something happen. I went through the usual Arduino resources before seeing what Rust had to offer. I&rsquo;m happy to report there&rsquo;s some really good material out there.
+ Discovery book Rust Embedded book Real Time For the Masses  If you&rsquo;re new to embedded (but not new to Rust), I&rsquo;d recommend the Discovery book as your jumping off point.">
+  <meta name="twitter:description" content="Recently, I&rsquo;ve been trying to learn more about electronics and embedded development. Maybe I&rsquo;m just tired of operating purely in the virtual, but there&rsquo;s something cool about being …">
+  <meta name="author" content="Evan Cameron"/>
+  <link href='https://leshow.github.io/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@evan_cam_" />
+  <meta name="twitter:creator" content="@evan_cam_" />
+  <meta property="og:url" content="https://leshow.github.io/post/rotary_encoder_hal/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Esoterically Typed" />
+
+  <meta name="generator" content="Hugo 0.54.0" />
+  <link rel="canonical" href="https://leshow.github.io/post/rotary_encoder_hal/" />
+  <link rel="alternate" href="https://leshow.github.io/index.xml" type="application/rss+xml" title="Esoterically Typed">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.css" integrity="sha384-wITovz90syo1dJWVh32uuETPVEtGigN07tkttEqPv+uR2SE/mbQcG7ATL28aI9H0" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://leshow.github.io/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://leshow.github.io/css/highlight.min.css" /><link rel="stylesheet" href="https://leshow.github.io/css/codeblock.css" />
+
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-145420817-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://leshow.github.io">Esoterically Typed</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Blog" href="/">Blog</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    <div class="avatar-container">
+      <div class="avatar-img-border">
+        
+          <a title="Esoterically Typed" href="https://leshow.github.io">
+            <img class="avatar-img" src="https://leshow.github.io/img/avatar-icon.png" alt="Esoterically Typed" />
+          </a>
+        
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+    
+  
+  
+  
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>Rotary Encoder in Embedded Rust</h1>
+                
+                
+                  <span class="post-meta">
+  
+  
+  <i class="fa fa-calendar-o"></i>&nbsp;Posted on October 16, 2019
+  
+  
+  &nbsp;|&nbsp;
+  <i class="fa fa-clock-o"></i> 4 minutes (672 words)
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        
+
+<p>Recently, I&rsquo;ve been trying to learn more about electronics and embedded development. Maybe I&rsquo;m just tired of operating purely in the virtual, but there&rsquo;s something cool about being able to physically put together a circuit and push a button to make something happen. I went through the usual Arduino resources before seeing what Rust had to offer. I&rsquo;m happy to report there&rsquo;s some really good material out there.</p>
+
+<ul>
+<li><a href="https://rust-embedded.github.io/discovery/index.html">Discovery book</a></li>
+<li><a href="https://docs.rust-embedded.org/book/intro/index.html">Rust Embedded book</a></li>
+<li><a href="https://japaric.github.io/rtfm5/book/en/preface.html">Real Time For the Masses</a></li>
+</ul>
+
+<p>If you&rsquo;re new to embedded (but not new to Rust), I&rsquo;d recommend the Discovery book as your jumping off point. It runs through the basics of how to build an embedded program, how to debug it, how to step through with GDB, how to read a data sheet, etc. After that, I&rsquo;d recommend the rust embedded book, it will show you how the ecosystem is put together.</p>
+
+<p>Embedded in Rust seems to really be taking off lately, there is a <a href="https://github.com/rust-lang-nursery/embedded-wg/issues/39">weekly driver initiative</a> which I hope this crate is good enough to be considered. I&rsquo;ve been hanging out in the Rust embedded matrix room if anyone wants to get at me and give me some feedback, the code that I&rsquo;ll be showing is also published on <a href="https://github.com/leshow/rotary-encoder-hal">github</a>, though not yet on <code>crates.io</code>.</p>
+
+<h2 id="rust-embedded-ecosystem">Rust Embedded Ecosystem</h2>
+
+<p>It&rsquo;s possible to build drivers that are hardware agnostic due to the <code>embedded-hal</code> crate. It&rsquo;s a collection of traits and types that abstract over specific implementations. <code>rotary-encoder-hal</code> uses the <a href="https://docs.rs/embedded-hal/0.2.3/embedded_hal/digital/v2/trait.InputPin.html">InputPin</a> trait, for example. I&rsquo;ll get into the details a bit more later.</p>
+
+<p>If you&rsquo;re interested in how the ecosystem fits together, I recommend checking out this <a href="https://docs.rust-embedded.org/book/start/registers.html">chapter</a> in the embedded book.</p>
+
+<h2 id="what-s-a-rotary-encoder">What&rsquo;s a Rotary Encoder</h2>
+
+<p>It&rsquo;s a peripheral whose position is encoded as digital output. In other words: it&rsquo;s a knob that you can turn. One nice thing about rotary encoders is they spin infinitely. The way they work is pretty simple, inside the encoder there&rsquo;s two pins and a bunch of evenly spaced contacts, as you spin, the pins will touch the contacts in a defineable way to create a square wave from which you can determine the direction. I apologize ahead of time for the quality of my drawings.</p>
+
+<p><img src="/rotary_encoder_hal/IMG_1.jpg" alt="Encoder wheel 1" /></p>
+
+<p>Then if the encoder was turned,</p>
+
+<p><img src="/rotary_encoder_hal/IMG_2.jpg" alt="Encoder wheel 2" /></p>
+
+<p>The resulting square wave would look like (top wave is A, bottom is B),</p>
+
+<p><img src="/rotary_encoder_hal/IMG_square.jpg" alt="Square wave" /></p>
+
+<p>The key thing to notice here is that they are 90° out of step.</p>
+
+<h2 id="implementation">Implementation</h2>
+
+<p>The implementation is fairly straightforward. If we consider the square waves from the previous section and those that naturally follow from turning the other direction, we can construct a truth table of the current state/old state to determine whether a turn occurred and which way.</p>
+
+<table>
+<thead>
+<tr>
+<th>Current</th>
+<th align="center">Old</th>
+<th align="right">Direction</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>00</td>
+<td align="center">01</td>
+<td align="right">Clockwise</td>
+</tr>
+
+<tr>
+<td>01</td>
+<td align="center">11</td>
+<td align="right">Clockwise</td>
+</tr>
+
+<tr>
+<td>10</td>
+<td align="center">00</td>
+<td align="right">Clockwise</td>
+</tr>
+
+<tr>
+<td>11</td>
+<td align="center">10</td>
+<td align="right">Clockwise</td>
+</tr>
+
+<tr>
+<td>00</td>
+<td align="center">10</td>
+<td align="right">CounterClockwise</td>
+</tr>
+
+<tr>
+<td>01</td>
+<td align="center">00</td>
+<td align="right">CounterClockwise</td>
+</tr>
+
+<tr>
+<td>10</td>
+<td align="center">11</td>
+<td align="right">CounterClockwise</td>
+</tr>
+
+<tr>
+<td>11</td>
+<td align="center">01</td>
+<td align="right">CounterClockwise</td>
+</tr>
+</tbody>
+</table>
+
+<p>We can represent the complete state as a single <code>u8</code>, and shift right by 2 (&gt;&gt; 2) to &lsquo;move in&rsquo; the current state.</p>
+
+<p>This truth table is implemented using the <code>From</code> trait for <code>u8</code></p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">enum</span> <span class="nc">Direction</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">Clockwise</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">CounterClockwise</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="nb">None</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">impl</span><span class="w"> </span><span class="nb">From</span><span class="o">&lt;</span><span class="kt">u8</span><span class="o">&gt;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Direction</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">from</span><span class="p">(</span><span class="n">s</span>: <span class="kt">u8</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">Self</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="k">match</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="mb">0b0001</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="mb">0b0111</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="mb">0b1000</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="mb">0b1110</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Direction</span>::<span class="n">Clockwise</span><span class="p">,</span><span class="w">
+</span><span class="w">            </span><span class="mb">0b0010</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="mb">0b0100</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="mb">0b1011</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="mb">0b1101</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Direction</span>::<span class="n">CounterClockwise</span><span class="p">,</span><span class="w">
+</span><span class="w">            </span><span class="n">_</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Direction</span>::<span class="nb">None</span><span class="p">,</span><span class="w">
+</span><span class="w">        </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>I&rsquo;ve got a <code>Rotary</code> struct that holds both pins and state.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">struct</span> <span class="nc">Rotary</span><span class="o">&lt;</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">B</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">pin_a</span>: <span class="nc">A</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">pin_b</span>: <span class="nc">B</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">state</span>: <span class="kt">u8</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>Now for the <code>embedded-hal</code> part. How can we say that <code>A</code> and <code>B</code> are gpio pins? <code>embedded-hal</code> helpfully exposes an <code>InputPin</code> trait, that has methods <code>is_low()</code> and <code>is_high()</code> for reading the state of the pins. Using this, we can constrain the implementation of <code>Rotary</code> to take two generic pins.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">impl</span><span class="o">&lt;</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">B</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Rotary</span><span class="o">&lt;</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">B</span><span class="o">&gt;</span><span class="w">
+</span><span class="w"></span><span class="k">where</span><span class="w">
+</span><span class="w">    </span><span class="n">A</span>: <span class="nc">InputPin</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">B</span>: <span class="nc">InputPin</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">new</span><span class="p">(</span><span class="n">pin_a</span>: <span class="nc">A</span><span class="p">,</span><span class="w"> </span><span class="n">pin_b</span>: <span class="nc">B</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">Self</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">Self</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="n">pin_a</span><span class="p">,</span><span class="w">
+</span><span class="w">            </span><span class="n">pin_b</span><span class="p">,</span><span class="w">
+</span><span class="w">            </span><span class="n">state</span>: <span class="mi">0</span><span class="k">u8</span><span class="p">,</span><span class="w">
+</span><span class="w">        </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="c1">//...
+</span><span class="c1"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p><code>Rotary</code> exposes an <code>update()</code> method, that when called reads the value for <code>pin_a</code> and <code>pin_b</code> into <code>state</code> using bitwise &lsquo;or&rsquo;.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">update</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="n">Direction</span><span class="p">,</span><span class="w"> </span><span class="n">Either</span><span class="o">&lt;</span><span class="n">A</span>::<span class="n">Error</span><span class="p">,</span><span class="w"> </span><span class="n">B</span>::<span class="n">Error</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="c1">// use mask to get previous state value
+</span><span class="c1"></span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">state</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mb">0b11</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="c1">// move in the new state
+</span><span class="c1"></span><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">pin_a</span><span class="p">.</span><span class="n">is_low</span><span class="p">().</span><span class="n">map_err</span><span class="p">(</span><span class="n">Either</span>::<span class="n">Left</span><span class="p">)</span><span class="o">?</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">s</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="mb">0b100</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">pin_b</span><span class="p">.</span><span class="n">is_low</span><span class="p">().</span><span class="n">map_err</span><span class="p">(</span><span class="n">Either</span>::<span class="n">Right</span><span class="p">)</span><span class="o">?</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">s</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="mb">0b1000</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="c1">// shift new to old
+</span><span class="c1"></span><span class="w">    </span><span class="bp">self</span><span class="p">.</span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="c1">// and here we use the From&lt;u8&gt; implementation above to return a Direction
+</span><span class="c1"></span><span class="w">    </span><span class="nb">Ok</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">into</span><span class="p">())</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>I hope you liked that little foray into the world of Rust embedded! I&rsquo;m a beginner in this space myself, so if anything seems out of sorts, let me know. Thanks for reading.</p>
+
+
+        
+
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://leshow.github.io/post/async_await/" data-toggle="tooltip" data-placement="top" title="Updating to Async/Await">&larr; Previous Post</a>
+            </li>
+          
+          
+        </ul>
+      
+
+
+      
+        
+        
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="mailto:cameron.evan@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://github.com/leshow" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/evan_cam_" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://linkedin.com/in/evan-cameron" title="LinkedIn">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-linkedin fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              <a href="leshow.github.io">Evan Cameron</a>
+            
+          
+
+          &nbsp;&bull;&nbsp;
+          2019
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://leshow.github.io">Esoterically Typed</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.54.0</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.js" integrity="sha384-/y1Nn9+QQAipbNQWU65krzJralCnuOasHncUFXGkdwntGeSvQicrYkiUBwsgUqc1" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/contrib/auto-render.min.js" integrity="sha384-dq1/gEHSxPZQ7DdrM82ID4YVol9BYyU7GbWlIwnwyPzotpoc57wDw/guX8EaYGPx" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/main.js"></script>
+<script src="https://leshow.github.io/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> $(document).ready(function() {$("pre.chroma").css("padding","0");}); </script><script> renderMathInElement(document.body); </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+  </body>
+</html>
+

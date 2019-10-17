@@ -3,6 +3,11 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
+    <loc>https://leshow.github.io/post/rotary_encoder_hal/</loc>
+    <lastmod>2019-10-16T20:31:51-04:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://leshow.github.io/post/async_await/</loc>
     <lastmod>2019-08-12T09:30:08-04:00</lastmod>
   </url>
@@ -28,7 +33,7 @@
   
   <url>
     <loc>https://leshow.github.io/</loc>
-    <lastmod>2019-08-12T09:30:08-04:00</lastmod>
+    <lastmod>2019-10-16T20:31:51-04:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -39,7 +44,7 @@
   
   <url>
     <loc>https://leshow.github.io/post/</loc>
-    <lastmod>2019-08-12T09:30:08-04:00</lastmod>
+    <lastmod>2019-10-16T20:31:51-04:00</lastmod>
     <priority>0</priority>
   </url>
   

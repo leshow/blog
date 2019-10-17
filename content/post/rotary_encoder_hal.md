@@ -1,12 +1,10 @@
 ---
 title: "Rotary Encoder in Embedded Rust"
 date: 2019-10-16T20:31:51-04:00
-draft: true
+draft: false
 ---
 
 Recently, I've been trying to learn more about electronics and embedded development. Maybe I'm just tired of operating purely in the virtual, but there's something cool about being able to physically put together a circuit and push a button to make something happen. I went through the usual Arduino resources before seeing what Rust had to offer. I'm happy to report there's some really good material out there.
-
-We have,
 
 - [Discovery book](https://rust-embedded.github.io/discovery/index.html)
 - [Rust Embedded book](https://docs.rust-embedded.org/book/intro/index.html)

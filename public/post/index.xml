@@ -7,10 +7,20 @@
     <generator>Hugo -- gohugo.io</generator>
     <managingEditor>cameron.evan@gmail.com (Evan Cameron)</managingEditor>
     <webMaster>cameron.evan@gmail.com (Evan Cameron)</webMaster>
-    <lastBuildDate>Mon, 12 Aug 2019 09:30:08 -0400</lastBuildDate>
+    <lastBuildDate>Wed, 16 Oct 2019 20:31:51 -0400</lastBuildDate>
     
 	<atom:link href="https://leshow.github.io/post/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Rotary Encoder in Embedded Rust</title>
+      <link>https://leshow.github.io/post/rotary_encoder_hal/</link>
+      <pubDate>Wed, 16 Oct 2019 20:31:51 -0400</pubDate>
+      <author>cameron.evan@gmail.com (Evan Cameron)</author>
+      <guid>https://leshow.github.io/post/rotary_encoder_hal/</guid>
+      <description>Recently, I&amp;rsquo;ve been trying to learn more about electronics and embedded development. Maybe I&amp;rsquo;m just tired of operating purely in the virtual, but there&amp;rsquo;s something cool about being able to physically put together a circuit and push a button to make something happen. I went through the usual Arduino resources before seeing what Rust had to offer. I&amp;rsquo;m happy to report there&amp;rsquo;s some really good material out there.
+ Discovery book Rust Embedded book Real Time For the Masses  If you&amp;rsquo;re new to embedded (but not new to Rust), I&amp;rsquo;d recommend the Discovery book as your jumping off point.</description>
+    </item>
     
     <item>
       <title>Updating to Async/Await</title>
