@@ -22,7 +22,7 @@ If you're interested in how the ecosystem fits together, I recommend checking ou
 
 ## What's a Rotary Encoder
 
-It's a peripheral whose position is encoded as digital output. In other words: it's a knob that you can turn. One nice thing about rotary encoders is they spin infinitely. The way they work is pretty simple, inside the encoder there's two pins and a bunch of evenly spaced contacts, as you spin, the pins will touch the contacts in a defineable way to create a square wave from which you can determine the direction. I apologize ahead of time for the quality of my drawings.
+It's a peripheral whose position is encoded as digital output. In other words: it's a knob that you can turn. One nice thing about rotary encoders is they spin infinitely. The way they work is pretty simple, inside the encoder there's two pins and a bunch of evenly spaced contacts, as you spin, the pins will touch the contacts in a definable way to create a square wave from which you can determine the direction. I apologize ahead of time for the quality of my drawings.
 
 ![Encoder wheel 1](/rotary_encoder_hal/IMG_1.jpg)
 
@@ -46,10 +46,10 @@ The implementation is fairly straightforward. If we consider the square waves fr
 | 01      | 11  |        Clockwise |
 | 10      | 00  |        Clockwise |
 | 11      | 10  |        Clockwise |
-| 00      | 10  | CounterClockwise |
-| 01      | 00  | CounterClockwise |
-| 10      | 11  | CounterClockwise |
-| 11      | 01  | CounterClockwise |
+| 00      | 10  | Counter-Clockwise |
+| 01      | 00  | Counter-Clockwise |
+| 10      | 11  | Counter-Clockwise |
+| 11      | 01  | Counter-Clockwise |
 
 We can represent the complete state as a single `u8`, and shift right by 2 (>> 2) to 'move in' the current state.
 
