@@ -228,7 +228,7 @@ impl<T: ToString> PrettyPrint for T {
 
 So long as `PrettyPrint` is in scope (read: imported), any type that implements `ToString` will also have access to `PrettyPrint` because of this implementation. Now, you have to be careful with blanket impl's because if two or more implementations overlap, the compile won't know which implementation is the correct one, but this is still a hugely useful and powerful feature.
 
-Speaking of traits, as a Java dev you may be aware that Java does not allow operator overloading. In Rust, this is not only provided, but encouraged. Consider that you can plugin to the language's syntax with traits; that's how the whole ecosystem works. We have the `Future` trait for await-able computations, there's `Iterator` and `IntoIterator` to access `for..in`, `Index` for `[]`, not to mention `Add`, `Sub`, `Mul`, etc for arithmetic operations. As a minimal example, let's make a type work with `Add`
+Speaking of traits, as a Java dev you may be aware that Java does not allow operator overloading. In Rust, this is not only provided, but encouraged. Consider that you can plugin to the language's syntax with traits; that's how the whole ecosystem works. We have the `Future` trait for await-able computations, there's `Iterator` and `IntoIterator` to use `for..in`, `Index` for `[]`, not to mention `Add`, `Sub`, `Mul`, etc for arithmetic operations. As a minimal example, let's make a type work with `Add`
 
 ```rust
 use std::ops::Add;
@@ -242,7 +242,7 @@ impl<T> Add for Content<T>
 where
     T: Add,
 {
-    type Output = Content<<T as Add>::Output>;
+    type Output = Content<<T as Add>::Output>; // we could reduce this to `T::Output` but it's not as explicit
     fn add(self, rhs: Content<T>) -> Self::Output {
         Content {
             val: self.val + rhs.val,
