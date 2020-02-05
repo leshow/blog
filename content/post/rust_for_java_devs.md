@@ -174,7 +174,7 @@ In Java polymorphism is usually means inheritance. That's not really true outsid
 
 There are many different string types in Rust. There's `str`, `String` (and it's referenced siblings `&str`, `&String`), `OsStr`, `OsString`, (`&OsStr`, `&OsString`). So if you declare a function that you want to take a string, which type should you use?
 
-`&str` is a good choice, you can pass a `&str` or `&String` to it and it will work because `String` implements the trait `Deref<Target=str>`. But we could do better than that with a polymorphic type.
+`&str` is a good choice, you can pass a `&str` or `&String` to it and it will work because `String` implements the trait `Deref<Target=str>` (the `Target=` syntax means that `Target` is an "associated type"). But we could do better than that with a polymorphic type.
 
 ```rust
 fn foo<S: AsRef<str>>(s: S) {
@@ -227,6 +227,37 @@ impl<T: ToString> PrettyPrint for T {
 ```
 
 So long as `PrettyPrint` is in scope (read: imported), any type that implements `ToString` will also have access to `PrettyPrint` because of this implementation. Now, you have to be careful with blanket impl's because if two or more implementations overlap, the compile won't know which implementation is the correct one, but this is still a hugely useful and powerful feature.
+
+Speaking of traits, as a Java dev you may be aware that Java does not allow operator overloading. In Rust, this is not only provided, but encouraged. Consider that you can plugin to the language's syntax with traits; that's how the whole ecosystem works. We have the `Future` trait for await-able computations, there's `Iterator` and `IntoIterator` to access `for..in`, `Index` for `[]`, not to mention `Add`, `Sub`, `Mul`, etc for arithmetic operations. As a minimal example, let's make a type work with `Add`
+
+```rust
+use std::ops::Add;
+
+#[derive(Debug)]
+struct Content<T> {
+    val: T,
+}
+
+impl<T> Add for Content<T>
+where
+    T: Add,
+{
+    type Output = Content<<T as Add>::Output>;
+    fn add(self, rhs: Content<T>) -> Self::Output {
+        Content {
+            val: self.val + rhs.val,
+        }
+    }
+}
+
+fn main() {
+    let a = Content { val: 2 };
+    let b = Content { val: 5 };
+    println!("{:?}", a + b);
+}
+```
+
+Read this slowly a few times if it doesn't make sense at first. We're declaring a new type `Content` that's valid for any `T`. In the implmentation for `Add`, we say that `Content` has an `Add` implementation so long as the thing that's _in_ `Content` also has an `Add` impl (`where T: Add`). After that, we have to help the compiler a bit to figure out how to find `Output` for `T`, although that's not always necessary (speaking about the `as` keyword). This is in order to say that the `Output` associated type (for `Content`) is going to be `Content` of `Output` of `T` when it impls `Add`. Don't worry if that all doesn't make sense at first, once you write a few implementations it will start to click.
 
 ## Conclusion
 
