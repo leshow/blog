@@ -4,11 +4,11 @@ date: 2020-02-02T22:23:50-05:00
 draft: true
 ---
 
-In a change for this blog post I want to talk leave the more advanced topics and focus on perhaps one of the most important things one can do in the Rust community; namely, teaching new Rust developers. I've been trying to think about how best to approach teaching Rust to those used to working with Java, in order to bring a group of developers up to speed with the language for a new project. Java was the language I learned at university, but it was a long time ago and I've been out of the Java world for a while. Not to date myself too much, but back when I was writing Java, if you wanted to pass a function as an argument, you had to declare a new interface or wrap a function in `Callable<T>`. Java has come along way since then. It's added many features from the ML lineage of languages and even some functional programming influences. There are lambda's now, `Optional` types, etc. There are a lot of great free resources out there to learn Rust, so don't take this post as in any way complete, just some thoughts on the topic.
+In a change for this blog post I want to leave the more advanced topics and focus on perhaps one of the most important things one can do in the Rust community: teaching new Rust developers. I've been trying to think about how best to approach teaching Rust to those used to working with Java, in order to bring a group of developers up to speed with the language for a new project. Java was the language I learned & abused at university, but it was a long time ago and I've been out of the Java world for a while. Not to date myself too much, but back when I was writing Java, if you wanted to pass a function as an argument, you had to declare a new interface or wrap a function in `Callable<T>`. Java has come along way since then. It's added features that had a clear influence from functional programming and the ML lineage of langs. We've got lambda's now, `Optional` types, etc. This article isn't going to be a comparison of Rust & Java, nor am I going to tell you that Rust is better for everything, I'm just hoping to introduce a few concepts that might be foreign to the average Java dev. There are a lot of great free resources out there to learn Rust, so don't take this post as in any way complete.
 
 I think the salient points to learn coming from Java to Rust basically boil down to a few broad categories:
 
-- Differences in the memory model (lack of GC, etc)
+- Differences in the memory model (lack of GC)
 - Algebraic Data Types
 - Ownership
 - Lifetimes & Borrowing
@@ -21,34 +21,46 @@ I'm interested to hear from other folks also; if you have some thoughts on pedag
 Rust doesn't have a garbage collector. You have much more control over how you allocate and where your values live. By default, everything exists on the stack. So this,
 
 ```rust
-let a = Thing { field: 1 };
+struct Thing { field: usize }
+
+fn main() {
+    let a = Thing { field: 1 };
+    // .. do stuff with a
+}
 ```
 
 Doesn't require any kind of dynamic memory allocation. The compiler can figure out the exact number of bytes that this is going to occupy in memory, there's even a trait for this called `Sized`. Not to jump ahead too much, but it should be noted by default all generic parameters are implicitly bounded by `Sized`, meaning if you write `fn foo<T>(t: T) -> T`, the it's implied that `T: Sized`. You have to specifically opt out of this constraint with `T: ?Sized`. Specifying that `T` _might_ be unsized. For more info, check out the [Unsized Types](https://doc.rust-lang.org/book/ch19-04-advanced-types.html#dynamically-sized-types-and-the-sized-trait) chapter.
 
-But I digress. We can create heap values with `Box`, and we can even create something close to Java's objects, and gain back dynamic dispatch with traits.
+But I digress. The compiler can also figure out how long this value is valid for. It has a defined starting point when it was created, and when it goes out of scope (at the end of main) and it can be destroyed. We can create heap values with `Box`.
+
+```rust
+
+fn main () {
+    let a = Box::new(Thing { field: 1 });
+}
+```
+
+Heap allocated values have a defined beginning and end too. I find it helpful to think about what the value actually _looks_ like that's in `a`. In the first example it was a struct with a single `usize` in it, but here it's a pointer to some memory on the heap. Using `Box`, we can create something close to Java's objects, and gain back dynamic dispatch with traits.
 
 ```rust
 trait Foo {}
 
-struct A {}
-
-impl Foo for A {}
+impl Foo for Thing {}
 
 fn main () {
-    let a = Box::new(A {}); // the type here is Box<dyn Foo>
+    let a: Box<dyn Foo> = Box::new(Thing { field: 1 });
 }
 ```
 
-This type is `Sized` also, it's just its size is that of a `Box`. I found visual diagrams to be eminently helpful in getting all of this to sink in. The [Rust container cheat sheet](https://docs.google.com/presentation/d/1q-c7UAyrUlM-eZyTo1pd8SZ0qwA_wYxmPZVOQkoDmH4/edit#slide=id.p) is a great resource.
+This type is `Sized` also, it's just its size is that of a `Box` (in this case a pointer and a vtable). I found visual diagrams to be eminently helpful in getting all of this to sink in. The [Rust container cheat sheet](https://docs.google.com/presentation/d/1q-c7UAyrUlM-eZyTo1pd8SZ0qwA_wYxmPZVOQkoDmH4/edit#slide=id.p) is a great resource.
 
-This dynamic behaviour isn't free. We pay by being explicit and with the actual cost of heap allocation. There's some debate on the topic but I think it's fair to say it's idiomatic to avoid heap allocation if it is easily avoidable.
+This dynamic behaviour isn't free. We pay by being explicit in our program, and with the actual cost of heap allocation. There's some debate on the topic but I think it's fair to say it's idiomatic to avoid heap allocation if it is easily avoidable.
 
 ## Algebraic Data Types
 
 ### Enum
 
-Programming in Rust is a much more data-centric, type driven approach to programming. Rust has 2 main ways of declaring new types of values, the `enum` keyword and `struct`. `enum` is a sum type (a tagged union if you prefer). I don't think it's helpful to think of a Rust enum as analogous to `enum` in Java. It does express that a type can have different variants, but it's much more powerful. For example, you may have heard that Rust lacks `null` or `nil`. This is true, if you want to express the absence of a value in Rust, there's a type in the [stdlib](https://doc.rust-lang.org/std/option/enum.Option.html) for that.
+Programming in Rust is a much more data-centric, type driven approach to programming. Rust has 2 main ways of declaring new types of values, the `enum` keyword and `struct`. `enum` is a sum type (a tagged union if you prefer). I don't think it's helpful to think of a Rust `enum` as analogous to `enum` in Java, but the common theme here is that both express that a type can have different variants. The Rust version is capable of expressing a great deal more. For example, you may have heard that Rust lacks `null` or `nil`. This is true, if you want to express the absence of a value in Rust, there's a type in the [stdlib](https://doc.rust-lang.org/std/option/enum.Option.html) for that.
 
 ```rust
 enum Option<T> {
@@ -191,3 +203,33 @@ foo(a);
 Why does this work? See if you can figure it out for yourself. If you need a [hint](https://doc.rust-lang.org/std/string/struct.String.html#implementations). When writing idiomatic Rust, it's crucial to get to know the built in [conversion traits](https://stevedonovan.github.io/rustifications/2018/09/08/common-rust-traits.html) available in the stdlib.
 
 Very broadly, traits are used to encapsulate behaviours that a type can have. A type implements these behaviours in order to gain that set of functionality. In a lot of ways it works like an interface in Java (especially since Java 8 introduced default implementations in interfaces).
+
+## Traits
+
+The traits & generic (you may see it call "parametric polymorphism" elsewhere) implementation in Rust is robust. Traits can have type parameters (`trait Foo<T> {}`), associated types (`trait Foo { type Bar; }`), but they can also be implemented on a type parameter. Try to think about what that might look like...
+
+Here's an example,
+
+```rust
+trait PrettyPrint {
+    fn pretty(&self) -> String;
+}
+```
+
+Okay, so we've got a trait `PrettyPrint` that's terribly named, and from the type signature we can see that the type that implements it is going to have to provide an implemenation from `&self -> String`. We could go ahead and make this public, and all types who want to pretty print would have to implement it. But maybe we can piggy-back on the existence of another trait, like [`ToString`](https://doc.rust-lang.org/std/string/trait.ToString.html). One way we could do that is by providing a so called "blanket impl" for all types that already implement `ToString`.
+
+```rust
+impl<T: ToString> PrettyPrint for T {
+    fn pretty(&self) -> String {
+        self.to_string()
+    }
+}
+```
+
+So long as `PrettyPrint` is in scope (read: imported), any type that implements `ToString` will also have access to `PrettyPrint` because of this implementation. Now, you have to be careful with blanket impl's because if two or more implementations overlap, the compile won't know which implementation is the correct one, but this is still a hugely useful and powerful feature.
+
+## Conclusion
+
+There's such a breadth of topics that I could have possibly covered in this article, I really didn't know where to start. I hope I've at least illuminated something for the beginners out there. Feel free to contact me if you've got some ideas for new things you'd like to see explored. If you are just starting out with Rust and feeling a little overwhelmed, don't worry! All of these topics can feel new and different, the only cure is reading and writing lots of Rust. Stick with it!
+
+Until next time.
