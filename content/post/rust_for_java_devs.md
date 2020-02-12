@@ -102,7 +102,7 @@ struct Thangs {
     list: Vec<Thang>
 }
 
-struct Thang {}
+struct Thang;
 
 impl Thangs {
     // *note* there is nothing special about `new` here, it's just convention
@@ -120,7 +120,7 @@ impl Thangs {
 fn main() {
     // *note* the &mut self in add_thangs requires us to declare mut below
     let mut thangs = Thangs::new();
-    thangs.add_thang(Thang {});
+    thangs.add_thang(Thang);
 }
 ```
 
@@ -128,7 +128,7 @@ Contrasting with Java, the `value.method()` syntax actually is actually just sug
 
 ```rust
 let mut thangs = Thangs::new();
-Thangs::add_thang(&mut thangs, Thang {});
+Thangs::add_thang(&mut thangs, Thang);
 ```
 
 In my opinion, a good handle on Rust starts with an understanding of the basic data type definitions. `enum` and `struct` will be your bread and butter. In Java, something like `struct` and `impl` are stuck together in objects, where your data and methods cohabitate, this couples code together (I suppose intentionally). Before you think "well why can't Rust just add objects", Java is also getting a struct-like feature. Coming in Java 14, "Records" will be added to the language. So it may actually be the case that next generation of Java code will end up looking more rust-ic than the inverse (I'm in no way claiming Rust was the first to do sum & product types). I've even seen proposals in Java that have something like sum types, so go ahead, embrace algebraic data types!
@@ -170,14 +170,14 @@ Another use for `Box` is dynamic dispatch. With this we can get something like J
 ```rust
 trait Foo {}
 
-struct Thing {}
+struct Thing;
 impl Foo for Thing {}
 
-struct OtherThing {}
+struct OtherThing;
 impl Foo for OtherThing {}
 
 fn main () {
-    let a: Vec<Box<dyn Foo>> = vec![Box::new(OtherThing {}), Box::new(Thing { })]; // type optional
+    let a: Vec<Box<dyn Foo>> = vec![Box::new(OtherThing), Box::new(Thing)]; // type optional
     // we have 2 different structs in the same list here
     // but we've erased the concrete type and now only know it as Foo
 }
