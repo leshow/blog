@@ -51,8 +51,8 @@ Rust includes a way to pattern match on `enum` variants with the `match` keyword
 ```rust
 fn plus(a: Option<usize>) -> Option<usize> {
     match a {
-        Some(v) => v + 1,
-        None
+        Some(v) => Some(v + 1),
+        None => None
     }
 }
 ```
