@@ -12,7 +12,7 @@ Java was the language I learned & abused in university, but it was a long time a
 
 First, a word on the goals of each language. Java was created to solve a set of problems. It was meant to be ["simple, object-oriented and modular"](<https://en.wikipedia.org/wiki/Java_(programming_language)#Principles>), it was intended to run in a virtual machine and be portable to different architectures, and it was meant to have high performance. Rust's goals are to be ["blazingly fast and memory efficient"](https://www.rust-lang.org/), have a "rich type system ... memory-safety and thread-safety", and be productive with good error messaging and a integrated package manager.
 
-There are some differences here. Performance is first on Rust's list, it mentions not having a runtime while also being memory safe, with a powerful type system. These are the areas that Rust really shines; code that is performant and safe. Servers that need to handle many thousands of requests per second, applications that need to be fast and run with a small memory footprint, or maybe an OS or code running on an embedded device. These things can be done in other languages, but this is the domain that Rust was built for. Rust does this while also prevent things like buffer overflows, dangling or null pointer errors. That's not to say Rust isn't being used in other places (I'm looking at you wasm frontends).
+There are some differences here. Performance is first on Rust's list, it mentions not having a runtime while also being memory safe, with a powerful type system. These are the areas that Rust really shines; code that is performant and safe. Servers that need to handle many thousands of requests per second, applications that need to be fast and run with a small memory footprint, or maybe an OS or code running on an embedded device. These things can be done in other languages, but this is the domain that Rust was built for. Rust does this while also prevent things like buffer overflows, dangling or null pointer errors. That's not to say Rust isn't being used in other places (I'm looking at [yew](https://github.com/yewstack/yew) wasm frontends).
 
 From a pedagogical standpoint, I think the salient points to learn coming from Java to Rust basically boil down to a few broad categories:
 
@@ -28,7 +28,7 @@ I'm interested to hear from other folks also; if you have some thoughts on pedag
 
 ### Enum
 
-Programming in Rust is a much more data-centric, type driven approach to programming. Rust has 2 main ways of declaring new types of values, the `enum` keyword and `struct`. `enum` is a sum type (a tagged union if you prefer). It's quite different `enum` in Java, but if we're going to make the comparison, think of it as like Java's `enum` but capable of expressing a great deal more. The common theme with `enum` in either language is is that both express a type can have different variants. For example, you may have heard that Rust lacks `null` or `nil`. This is true, if you want to express the absence of a value in Rust, there's a type in the [stdlib](https://doc.rust-lang.org/std/option/enum.Option.html) for that.
+Programming in Rust is a much more data-centric, type driven approach to programming. Rust has 2 main ways of declaring new types of values, the `enum` keyword and `struct`. `enum` is a sum type (a tagged union if you prefer). It's different from `enum` in Java, but if we're going to make the comparison, think of it as like Java's `enum` but capable of expressing a great deal more. The common theme with `enum` in either language is is that both express a type can have different variants. For example, you may have heard that Rust lacks `null` or `nil`. This is true, if you want to express the absence of a value in Rust, there's a type in the [stdlib](https://doc.rust-lang.org/std/option/enum.Option.html) for that.
 
 ```rust
 enum Option<T> {
@@ -37,14 +37,14 @@ enum Option<T> {
 }
 ```
 
-In English, this is declaring a new type `Option` that takes a type parameter `T`. `T` is unrestricted or unbounded -- meaning the definition is valid for any type, and we're representing that with the variable `T`. `Option` has 2 possible variants, it's either the `None` constructor (or 'data constructor') representing the lack of a value, or the `Some` constructor and a value of `T`. To declare values,
+In English, this is declaring a new type `Option` that takes a type parameter `T`. `T` is unrestricted or unbounded -- meaning the definition is valid for any type, and we're representing that with the variable `T`. `Option` has 2 possible variants, it's either the `None` constructor (a 'data constructor') representing the lack of a value, or the `Some` constructor and a value of `T`. To declare values,
 
 ```rust
 let a = Some("foo".to_string()); // declaring a value of type Option<String>
 let b: Option<usize> = Some(1); // declaring a value of type Option<usize>, but with a type annotation
 ```
 
-A note about type annotations: it's required at function boundaries but locally types are inferred. It's considered idiomatic to leave the annotation off if you can get away with it. There are some cases where it is needed, but that's outside the scope of todays post.
+A note about type annotations: it's required at function boundaries but locally types are inferred. It's considered idiomatic to leave the annotation off if you can get away with it. There are some cases where it's needed, but that's outside the scope of today's post.
 
 Rust includes a way to pattern match on `enum` variants with the `match` keyword. If you haven't used a language with robust pattern matching before, it's really a pleasure to use.
 
