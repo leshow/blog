@@ -131,7 +131,7 @@ let mut thangs = Thangs::new();
 Thangs::add_thang(&mut thangs, Thang {});
 ```
 
-In my opinion, a good handle Rust starts with an understanding of the basic data type definitions. `enum` and `struct` will be your bread and butter. In Java, all these features are stuck together in objects. Objects in Java have both a data type definition and method implementations, this couples code together (I suppose intentionally). Before you think "well why can't Rust just add objects", Java is also getting a struct-like feature. Coming in Java 14, "Records" will be added to the language. So it may actually be the case that next generation Java code will end up looking more rust-ic than the inverse (I'm in no way claiming Rust was the first to do sum & product types). I've even seen proposals in Java that have something like sum types, so go ahead! Embrace algebraic data types! They are a pleasure to use.
+In my opinion, a good handle on Rust starts with an understanding of the basic data type definitions. `enum` and `struct` will be your bread and butter. In Java, something like `struct` and `impl` are stuck together in objects, where your data and methods cohabitate, this couples code together (I suppose intentionally). Before you think "well why can't Rust just add objects", Java is also getting a struct-like feature. Coming in Java 14, "Records" will be added to the language. So it may actually be the case that next generation of Java code will end up looking more rust-ic than the inverse (I'm in no way claiming Rust was the first to do sum & product types). I've even seen proposals in Java that have something like sum types, so go ahead, embrace algebraic data types!
 
 ## Stack vs Heap
 
@@ -148,9 +148,9 @@ fn main() {
 }
 ```
 
-Doesn't require any kind of dynamic memory allocation. The compiler can figure out the exact number of bytes that this is going to occupy in memory, there's even a trait for this called `Sized`. The compiler can also figure out how long this value is valid for. It has a defined starting point when it was created, and when it goes out of scope (at the end of main) and it can be destroyed.
+Doesn't require any kind of dynamic memory allocation. The compiler can figure out the exact number of bytes that this is going to occupy in memory, there's even a trait for this called `Sized`. The compiler can also figure out how long this value is valid for. It has a defined starting point when it was created, and when it goes out of scope (at the end of main) it can be destroyed.
 
-Contrast this with Java, where you create instances of an object with `new`. `new` causes heap allocation, and a reference will be stored in your variable and passed by value.
+Contrast this with Java, where you create instances of an object with `new`, which causes heap allocation and an implicit reference be stored in your variable, which is passed around by-value.
 
 ### The heap
 
@@ -183,11 +183,11 @@ fn main () {
 }
 ```
 
-This dynamic behaviour isn't free. We pay by being explicit in our program, and with the actual cost of heap allocation. There's some debate on the topic but I think it's fair to say it's idiomatic to avoid heap allocation if it is easily avoidable.
+Worry not about the `trait`, we'll visit this also. The important thing to gather here is that this dynamic behaviour isn't free. We pay by being explicit in our program, and with the actual cost of heap allocation. There's some debate in the Rust community, but I think it's fair to say it's idiomatic to avoid heap allocation if it is easily avoidable.
 
 I found visual diagrams to be eminently helpful in getting all of this to sink in. The [Rust container cheat sheet](https://docs.google.com/presentation/d/1q-c7UAyrUlM-eZyTo1pd8SZ0qwA_wYxmPZVOQkoDmH4/edit#slide=id.p) is a great resource.
 
-Lets take a look at a another type defintion:
+Lets take a look at a another type defintion,
 
 ```rust
 enum List<T> {
@@ -217,7 +217,7 @@ error[E0072]: recursive type `List` has infinite size
 
 The error messages from the compiler are really top notch. There's a reason given and often `help` has a fix. It's telling us we can't make a recursive type like this without adding in some indirection so that the compiler can figure out it's size. Remember, if everything is on the stack by default, and stack values need to have a statically known size, then how can we have an n-sized linked list? Without a reference or a pointer to the next element on the list, how will the compiler statically figure out how much memory to use? Convince yourself this is true, thinking visually sometimes helps.
 
-We can `fix` this by adding indirection:
+We can `fix` this by adding indirection,
 
 ```rust
 enum List<T> {
@@ -267,7 +267,7 @@ Back to our example. In Java, we may make a `Shape` parent class or interface, a
 
 This has been described before as the 'expression problem'. It illustrates some central differences between approaches to languages. This isn't meant to detract from using `enum` in Rust or using interfaces/classes in Java. There are many places where you _want_ Rust to do exhaustiveness analysis with `match` and where a sum type just makes the most sense. But it begs the question, "can we come up with a system where we don't have to modify the original definition in either case?"
 
-traits can solve this type of problem,
+I think traits provide a pretty nice solution,
 
 ```rust
 trait Area {
@@ -311,11 +311,11 @@ impl Perimeter for Rectangle {
 // etc
 ```
 
-Additionally, we can write functions that take any type which has a perimeter, or perimeter and area,
+Additionally, we can write functions that take any type which has a perimeter, or perimeter _and_ area,
 
 ```rust
 fn do_something<T: Perimeter + Area>(shape: T) { // only accept types who have a Perimeter and Area impl
-    unimplemented!() // hot tip: this macro is invaluable. it satisfies the type checker for your function without providing an implementation
+    unimplemented!() // hot tip: this macro is invaluable. it satisfies the type checker without providing an implementation
 }
 ```
 
@@ -323,7 +323,7 @@ fn do_something<T: Perimeter + Area>(shape: T) { // only accept types who have a
 
 The traits (called "parametric polymorphism" sometimes) implementation in Rust is expressive. You may have heard it compared to operator overloading, which Java lacks. I think this is a fair introduction to it's feature set. In Java, overloading is shunned. Not so in Rust, traits are provided for you to implement and conform to their specification, gaining access to built-in syntax and interoperability. Consider that you can plug-in to the language's syntax with traits; that's how the whole ecosystem works. There's the `Future` trait for await-able computations, there's `Iterator` and `IntoIterator` to use `for..in`, `Index` for `[]`, not to mention `Add`, `Sub`, `Mul`, etc for arithmetic operations. As a minimal example, let's make a type work with [`Add`](https://doc.rust-lang.org/std/ops/trait.Add.html)
 
-Here is our `Add` definition from std:
+Here is our `Add` definition from std,
 
 ```rust
 pub trait Add<Rhs = Self> { // 1
@@ -361,7 +361,7 @@ fn main() {
 }
 ```
 
-We're declaring a new type `Content` that's valid for any `T` (1). In the implementation for `Add`, we say that `Content` has an `Add` implementation (2) so long as the thing that's in `Content` _also_ has an `Add` impl (3). After that, we specify the `Output` associated type is going to be `Content` of `Output` of `T` when it impls `Add` (4). Don't worry if that all doesn't make sense at first, once you write a few implementations it will start to click.
+We're declaring a new type `Content` that's valid for any `T` (1). In the implementation for `Add`, we say that `Content` has an `Add` implementation (2) so long as the thing that's in `Content` _also_ has an `Add` impl (3). After that, we specify the `Output` associated type is going to be `Content` of `Output` of `T` when it impls `Add` (4). Don't worry if that all doesn't make sense at first, once you write a few implementations it will start to click. I think it's kind of cool that most of this program is actually about the type system. We only have a few lines that actually "do" anything, this should give you a feel for what programming in Rust is like. You are predominantly designing at the type level, then convincing Rust your program is well-formed, and it makes a pretty good pair programmer at pointing out your errors.
 
 It should be noted by default all generic parameters are implicitly bounded by `Sized`, meaning if you write `fn foo<T>(t: T) -> T`, it's implied that `T: Sized`. You have to opt out of this constraint with `T: ?Sized`. Specifying that `T` _might_ be unsized. For more info, check out the [Unsized Types](https://doc.rust-lang.org/book/ch19-04-advanced-types.html#dynamically-sized-types-and-the-sized-trait) chapter.
 
