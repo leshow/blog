@@ -6,13 +6,15 @@ draft: true
 
 In a change for this blog I want to leave the more bleeding edge topics and focus on perhaps one of the most important things one can do in the Rust community: teaching new Rust developers. I've been thinking about how best to approach teaching Rust to those used to working with Java, in order to bring a group of developers up to speed with the language for a new project.
 
-Java was the language I learned & abused in university, but it was a long time ago and I've been out of the Java world for a while. When I last wrote Java, if you wanted to pass a function as an argument, you had to declare a new interface or wrap a function in `Callable<T>`. Java has come along way since then. It's added features that have a clear influence from functional programming and the ML lineage of langs. I'm talking about lambda's, `Optional` types, etc. This article isn't going to tell you to write everything in Rust, or that you need to throw out all your Java code. Java is a great language with valid use cases. I want to explore some comparisons between Java and Rust for the budding Rust programmer.
+Java was the language I learned & abused in university, so my experience with it is somewhat anachronistic and I haven't made any real attempt to keep up with the language. When I last wrote Java, if you wanted to pass a function as an argument, you had to declare a new interface or wrap a function in `Callable<T>`. Java has come along way since then. It's added features that have a clear influence from functional programming and the ML lineage of langs. I'm talking about lambda's, `Optional` types, etc. This article isn't going to tell you to write everything in Rust, or that you need to throw out all your Java code. Java is a great language with valid use cases. I want to explore some comparisons between Java and Rust for the budding Rust programmer.
 
-## Motivation
+## Language Motivation
 
 First, a word on the goals of each language. Java was created to solve a set of problems. It was meant to be ["simple, object-oriented and modular"](<https://en.wikipedia.org/wiki/Java_(programming_language)#Principles>), it was intended to run in a virtual machine and be portable to different architectures, and it was meant to have high performance. Rust's goals are to be ["blazingly fast and memory efficient"](https://www.rust-lang.org/), have a "rich type system ... memory-safety and thread-safety", and be productive with good error messaging and a integrated package manager.
 
-There are some differences here. Performance is first on Rust's list, it mentions not having a runtime while also being memory safe, with a powerful type system. These are the areas that Rust really shines; code that is performant and safe. Servers that need to handle many thousands of requests per second, applications that need to be fast and run with a small memory footprint, or maybe an OS or code running on an embedded device. These things can be done in other languages, but this is the domain that Rust was built for. Rust does this while also prevent things like buffer overflows, dangling or null pointer errors. That's not to say Rust isn't being used in other places (I'm looking at [yew](https://github.com/yewstack/yew) wasm frontends), and personally, I found that once I got used to the language my prototyping speed was often on par or better than with languages that have a simpler (or dynamic) type system. But that's an argument for another blog post.
+There are some differences here. Performance is high on Rust's list, it mentions not having a runtime while also being memory safe, with a powerful type system. These are the areas that Rust really shines; code that is performant and safe. Servers that need to handle many thousands of requests per second, applications that need to be fast and run with a small memory footprint, or maybe an OS or code running on an embedded device. These things can be done in other languages, but this is the domain that Rust was built for. Rust does this while also prevent things like buffer overflows, dangling or null pointer errors.
+
+That's not to say Rust isn't being used in other places (I'm looking at [yew](https://github.com/yewstack/yew) wasm frontends). And personally, I found that once I got used to the language, my prototyping speed was often on par or better than with languages that have a simpler (or dynamic) type system. But that's an argument for another blog post.
 
 From a pedagogical standpoint, I think the salient points to learn coming from Java to Rust basically boil down to a few broad categories:
 
@@ -179,15 +181,15 @@ impl Foo for OtherThing {}
 fn main () {
     let a: Vec<Box<dyn Foo>> = vec![Box::new(OtherThing), Box::new(Thing)]; // type optional
     // we have 2 different structs in the same list here
-    // but we've erased the concrete type and now only know it as Foo
+    // but we've erased the concrete type and now only know it as a trait Foo
 }
 ```
 
-Worry not about the `trait`, we'll visit this also. The important thing to gather here is that this dynamic behaviour isn't free. We pay by being explicit in our program, and with the actual cost of heap allocation. There's some debate in the Rust community, but I think it's fair to say it's idiomatic to avoid heap allocation if it is easily avoidable.
+Don't worry about the `trait`, we'll visit this soon also. The important thing to gather here is that this is dynamic behaviour and it isn't free. We pay by being explicit in our program, and with the actual cost of heap allocation. There's some debate in the Rust community, but I think it's fair to say it's idiomatic to avoid heap allocation if it's easily avoidable.
 
 I found visual diagrams to be eminently helpful in getting all of this to sink in. The [Rust container cheat sheet](https://docs.google.com/presentation/d/1q-c7UAyrUlM-eZyTo1pd8SZ0qwA_wYxmPZVOQkoDmH4/edit#slide=id.p) is a great resource.
 
-Lets take a look at a another type defintion,
+Lets take a look at a another type definition,
 
 ```rust
 enum List<T> {
@@ -258,14 +260,14 @@ Encapsulation & visibility in Java has a lot of forms at the class level. In Rus
 
 Back to our example. In Java, we may make a `Shape` parent class or interface, and have a `Circle` and `Rectangle` class, each implementing the `area` method. If we think about the differences between the Rust and Java implementation, a few things become clear:
 
-- If we have to add another `Shape`:
-  - in Java we just need to declare another class and implement `Shape`
-  - in Rust we have to modify the original `Shape` definition _and_ everywhere it's used (`match` will refuse to compile unless it handles all the possible variants)
-- If we add a new function for `Shape`:
-  - we have to modify the original `Shape` 'contract' in Java, meaning we had to add a new function to the interface, and everyone who implements this interface must be changed
-  - in Rust we can just add a new `impl`
+- If we to want another `Shape`:
+  - Java: we just need to declare another class and implement `Shape`
+  - Rust: we have to modify the original `Shape` definition _and_ everywhere it's used (`match` will refuse to compile unless it handles all the possible variants)
+- If we want a new function for `Shape`:
+  - Java: we have to modify the original `Shape` 'contract', meaning we have to add a new function to the interface, and everyone who implements this interface must be changed
+  - Rust: we can just add a new `impl`
 
-This has been described before as the 'expression problem'. It illustrates some central differences between approaches to languages. This isn't meant to detract from using `enum` in Rust or using interfaces/classes in Java. There are many places where you _want_ Rust to do exhaustiveness analysis with `match` and where a sum type just makes the most sense. But it begs the question, "can we come up with a system where we don't have to modify the original definition in either case?"
+This has been described before as the 'expression problem'. It illustrates some central differences between approaches to languages. This isn't meant to detract from using `enum` in Rust or using interfaces/classes in Java. Generally, we _want_ Rust to do exhaustiveness analysis with `match` and `enum`s. But it begs the question, "Can we write it in a way which doesn't require modification of existing code?"
 
 I think traits provide a pretty nice solution,
 
@@ -296,7 +298,7 @@ impl Area for Circle {
 }
 ```
 
-Now, if we need to add a new function to `Circle` or `Rectangle`, say `perimeter`, we can do it without modifying the original type definition.
+Now, if we need to add a new function to `Circle` or `Rectangle`, say `perimeter`, we can do it without modifying the original trait or types:
 
 ```rust
 trait Perimeter {
@@ -311,17 +313,17 @@ impl Perimeter for Rectangle {
 // etc
 ```
 
-Additionally, we can write functions that take any type which has a perimeter, or perimeter _and_ area,
+We're also free to add more shapes. And, we can write functions that take any type which has a perimeter, or perimeter _and_ area,
 
 ```rust
-fn do_something<T: Perimeter + Area>(shape: T) { // only accept types who have a Perimeter and Area impl
+fn do_something<T: Perimeter + Area>(shape: T) { // only accept types who have both a Perimeter and Area impl
     unimplemented!() // hot tip: this macro is invaluable. it satisfies the type checker without providing an implementation
 }
 ```
 
 ### Traits & Generics
 
-The traits (called "parametric polymorphism" sometimes) implementation in Rust is expressive. You may have heard it compared to operator overloading, which Java lacks. I think this is a fair introduction to it's feature set. In Java, overloading is shunned. Not so in Rust, traits are provided for you to implement and conform to their specification, gaining access to built-in syntax and interoperability. Consider that you can plug-in to the language's syntax with traits; that's how the whole ecosystem works. There's the `Future` trait for await-able computations, there's `Iterator` and `IntoIterator` to use `for..in`, `Index` for `[]`, not to mention `Add`, `Sub`, `Mul`, etc for arithmetic operations. As a minimal example, let's make a type work with [`Add`](https://doc.rust-lang.org/std/ops/trait.Add.html)
+The traits implementation in Rust is expressive. You may have heard it compared to operator overloading, which Java lacks. I think this is a fair introduction to it's feature set. In Java, overloading is shunned. Not so in Rust, traits are provided for you to implement and conform to their specification, gaining access to built-in syntax and interoperability. Consider that you can plug-in to the language's syntax with traits; that's how the whole ecosystem works. There's the `Future` trait for await-able computations, there's `Iterator` and `IntoIterator` to use `for..in`, `Index` for `[]`, not to mention `Add`, `Sub`, `Mul`, etc for arithmetic operations. As a minimal example, let's make a type work with [`Add`](https://doc.rust-lang.org/std/ops/trait.Add.html)
 
 Here is our `Add` definition from std,
 
@@ -367,7 +369,9 @@ It should be noted by default all generic parameters are implicitly bounded by `
 
 ## Polymorphism
 
-In Java polymorphism usually means inheritance. That's not really true outside the OO world, certainly not in Rust, which lacks Java's version of the feature altogether. To use the PLT terminology, Java's brand of polymorphism is subtype polymorphism, whereas Rust is parametric and ad-hoc polymorphism. Don't feel bad if those words don't mean much to you. The important things to know are that you declare data structures with `enum` or `struct` (or both) and define it's implementation with `impl` and/or `impl` various traits in order to extend your type with functionality, and you can bound functions by allowing only certain implementors to call. Let's take an example,
+In Java polymorphism usually means inheritance. That's not really true outside the OO world, certainly not in Rust, which lacks Java's version of the feature altogether. Java's brand of polymorphism is subtype polymorphism, whereas Rust is parametric and ad-hoc polymorphism. Parametric polymorphism just means we can pass around generic type parameters, and ad-hoc refers to the way we can bound these type parameters to traits (with `<T: Trait>`).
+
+Practically, knowing the 'correct' terminology isn't super important. The important things to know are that you can declare data structures with `enum` or `struct` and define an implementation with `impl`, and you can `impl` various traits in order to extend your type with functionality. You can also bound types by allowing only certain implementors to call. Let's take an example,
 
 There are many different string types in Rust. There's `str`, `String`, `OsStr`, `OsString`, `CString` and `CStr` (did I miss any?). Practically, the common ones are `str` and `String`, the other's are special purpose. If we declare a function that we want to take a string, which type should we use?
 
@@ -397,7 +401,9 @@ let a = String::from("stuff");
 foo(a);
 ```
 
-Why does this work? See if you can figure it out for yourself (if you need a [hint](https://doc.rust-lang.org/std/string/struct.String.html#implementations)). When writing idiomatic Rust, it's crucial to get to know the built in [conversion traits](https://stevedonovan.github.io/rustifications/2018/09/08/common-rust-traits.html) available in the stdlib. Very broadly, traits are used to encapsulate behaviours that a type can have. A type implements these behaviours in order to gain that set of functionality. In a lot of ways it works like an interface in Java (especially since Java 8 introduced default implementations in interfaces). Java naturally lends itself to a style that's very inheritance-centric. However, it's popular in the OO world to repeat the mantra "composition over inheritance". In Rust, you don't have an option, it's composition all the way.
+Why does this work? See if you can figure it out for yourself (if you need a [hint](https://doc.rust-lang.org/std/string/struct.String.html#implementations)). When writing idiomatic Rust, it's crucial to get to know the built in [conversion traits](https://stevedonovan.github.io/rustifications/2018/09/08/common-rust-traits.html) available in the stdlib.
+
+There are lots of other examples I could show, but this post is already too long. Essentially, traits are used to encapsulate behaviours that a type can have. A type implements these behaviours in order to gain that set of functionality. In a lot of ways it works like an interface in Java (especially since Java introduced default implementations in interfaces). But Java naturally lends itself to a style that's very inheritance-centric. It's popular in the OO world to repeat the mantra "composition over inheritance". In Rust, you don't have an option, it's composition all the way.
 
 ## Conclusion
 
