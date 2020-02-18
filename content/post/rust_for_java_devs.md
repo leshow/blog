@@ -4,7 +4,7 @@ date: 2020-02-18T10:23:50-05:00
 draft: false
 ---
 
-In a change for this blog I want to leave the more bleeding edge topics and focus on perhaps one of the most important things one can do in the Rust community: teaching new Rust developers. I've been thinking about how best to approach teaching Rust to those used to working with Java, in order to bring a group of developers up to speed with the language for a new project.
+I'd like to take a change for this blog and leave the more bleeding edge topics to focus on perhaps one of the most important things one can do in the Rust community: teaching new Rust developers. I've been thinking about how best to approach teaching Rust to those used to working with Java, in order to bring a group of developers up to speed with the language for a new project.
 
 Java was the language I learned & abused in university, so my experience with it is somewhat anachronistic and I haven't made any real attempt to keep up with the language. When I last wrote Java, if you wanted to pass a function as an argument, you had to declare a new interface or wrap a function in `Callable<T>`. Java has come along way since then. It's added features that have a clear influence from functional programming and the ML lineage of langs. I'm talking about lambda's, `Optional` types, etc. This article isn't going to tell you to write everything in Rust, or that you need to throw out all your Java code. Java is a great language with valid use cases. I want to explore some comparisons between Java and Rust for the budding Rust programmer.
 
