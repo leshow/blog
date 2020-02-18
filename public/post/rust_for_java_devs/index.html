@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>Rust for Java Devs</title>
+  <meta property="og:title" content="Rust for Java Devs" />
+  <meta name="twitter:title" content="Rust for Java Devs" />
+  <meta name="description" content="In a change for this blog I want to leave the more bleeding edge topics and focus on perhaps one of the most important things one can do in the Rust community: teaching new Rust developers. I&rsquo;ve been thinking about how best to approach teaching Rust to those used to working with Java, in order to bring a group of developers up to speed with the language for a new project.">
+  <meta property="og:description" content="In a change for this blog I want to leave the more bleeding edge topics and focus on perhaps one of the most important things one can do in the Rust community: teaching new Rust developers. I&rsquo;ve been thinking about how best to approach teaching Rust to those used to working with Java, in order to bring a group of developers up to speed with the language for a new project.">
+  <meta name="twitter:description" content="In a change for this blog I want to leave the more bleeding edge topics and focus on perhaps one of the most important things one can do in the Rust community: teaching new Rust developers. I&rsquo;ve …">
+  <meta name="author" content="Evan Cameron"/>
+  <link href='https://leshow.github.io/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@evan_cam_" />
+  <meta name="twitter:creator" content="@evan_cam_" />
+  <meta property="og:url" content="https://leshow.github.io/post/rust_for_java_devs/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Esoterically Typed" />
+
+  <meta name="generator" content="Hugo 0.37.1" />
+  <link rel="canonical" href="https://leshow.github.io/post/rust_for_java_devs/" />
+  <link rel="alternate" href="https://leshow.github.io/index.xml" type="application/rss+xml" title="Esoterically Typed">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.css" integrity="sha384-wITovz90syo1dJWVh32uuETPVEtGigN07tkttEqPv+uR2SE/mbQcG7ATL28aI9H0" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://leshow.github.io/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://leshow.github.io/css/highlight.min.css" /><link rel="stylesheet" href="https://leshow.github.io/css/codeblock.css" />
+
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+<script>
+window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+ga('create', 'UA-145420817-1', 'auto');
+ga('send', 'pageview');
+</script>
+<script async src='//www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://leshow.github.io">Esoterically Typed</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Blog" href="/">Blog</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    <div class="avatar-container">
+      <div class="avatar-img-border">
+        
+          <a title="Esoterically Typed" href="https://leshow.github.io">
+            <img class="avatar-img" src="https://leshow.github.io/img/avatar-icon.png" alt="Esoterically Typed" />
+          </a>
+        
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+    
+  
+  
+  
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>Rust for Java Devs</h1>
+                
+                
+                  <span class="post-meta">
+  
+  
+  <i class="fa fa-calendar-o"></i>&nbsp;Posted on February 18, 2020
+  
+  
+  &nbsp;|&nbsp;
+  <i class="fa fa-clock-o"></i> 18 minutes (3714 words)
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        
+
+<p>In a change for this blog I want to leave the more bleeding edge topics and focus on perhaps one of the most important things one can do in the Rust community: teaching new Rust developers. I&rsquo;ve been thinking about how best to approach teaching Rust to those used to working with Java, in order to bring a group of developers up to speed with the language for a new project.</p>
+
+<p>Java was the language I learned &amp; abused in university, so my experience with it is somewhat anachronistic and I haven&rsquo;t made any real attempt to keep up with the language. When I last wrote Java, if you wanted to pass a function as an argument, you had to declare a new interface or wrap a function in <code>Callable&lt;T&gt;</code>. Java has come along way since then. It&rsquo;s added features that have a clear influence from functional programming and the ML lineage of langs. I&rsquo;m talking about lambda&rsquo;s, <code>Optional</code> types, etc. This article isn&rsquo;t going to tell you to write everything in Rust, or that you need to throw out all your Java code. Java is a great language with valid use cases. I want to explore some comparisons between Java and Rust for the budding Rust programmer.</p>
+
+<h2 id="language-motivation">Language Motivation</h2>
+
+<p>First, a word on the goals of each language. Java was created to solve a set of problems. It was meant to be <a href="https://en.wikipedia.org/wiki/Java_(programming_language)#Principles">&ldquo;simple, object-oriented and modular&rdquo;</a>, it was intended to run in a virtual machine and be portable to different architectures, and it was meant to have high performance. Rust&rsquo;s goals are to be <a href="https://www.rust-lang.org/">&ldquo;blazingly fast and memory efficient&rdquo;</a>, have a &ldquo;rich type system &hellip; memory-safety and thread-safety&rdquo;, and be productive with good error messaging and a integrated package manager.</p>
+
+<p>There are some differences here. Performance is high on Rust&rsquo;s list, it mentions not having a runtime while also being memory safe, with a powerful type system. These are the areas that Rust really shines; code that is performant and safe. Servers that need to handle many thousands of requests per second, applications that need to be fast and run with a small memory footprint, or maybe an OS or code running on an embedded device. These things can be done in other languages, but this is the domain that Rust was built for. Rust does this while also prevent things like buffer overflows, dangling or null pointer errors.</p>
+
+<p>That&rsquo;s not to say Rust isn&rsquo;t being used in other places (I&rsquo;m looking at <a href="https://github.com/yewstack/yew">yew</a> wasm frontends). And personally, I found that once I got used to the language, my prototyping speed was often on par or better than with languages that have a simpler (or dynamic) type system. But that&rsquo;s an argument for another blog post.</p>
+
+<p>From a pedagogical standpoint, I think the salient points to learn coming from Java to Rust basically boil down to a few broad categories:</p>
+
+<ul>
+<li>Algebraic Data Types</li>
+<li>Differences in the memory model (lack of GC)</li>
+<li>Ownership</li>
+<li>Lifetimes &amp; Borrowing</li>
+<li>Parametric Polymorphism (Generics) &amp; Traits</li>
+</ul>
+
+<p>I&rsquo;m interested to hear from other folks also; if you have some thoughts on pedagogy feel free to shoot me an e-mail. I won&rsquo;t cover all of these here, but we&rsquo;ll touch on some of the important parts.</p>
+
+<h2 id="algebraic-data-types">Algebraic Data Types</h2>
+
+<h3 id="enum">Enum</h3>
+
+<p>Programming in Rust is a much more data-centric, type driven approach to programming. Rust has 2 main ways of declaring new types of values, the <code>enum</code> keyword and <code>struct</code>. <code>enum</code> is a sum type (a tagged union if you prefer). It&rsquo;s different from <code>enum</code> in Java, but if we&rsquo;re going to make the comparison, think of it as like Java&rsquo;s <code>enum</code> but capable of expressing a great deal more. The common theme with <code>enum</code> in either language is is that both express a type can have different variants. For example, you may have heard that Rust lacks <code>null</code> or <code>nil</code>. This is true, if you want to express the absence of a value in Rust, there&rsquo;s a type in the <a href="https://doc.rust-lang.org/std/option/enum.Option.html">stdlib</a> for that.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">enum</span> <span class="nb">Option</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="nb">None</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="nb">Some</span><span class="p">(</span><span class="n">T</span><span class="p">),</span><span class="w">
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
+<p>In English, this is declaring a new type <code>Option</code> that takes a type parameter <code>T</code>. <code>T</code> is unrestricted or unbounded &ndash; meaning the definition is valid for any type, and we&rsquo;re representing that with the variable <code>T</code>. <code>Option</code> has 2 possible variants, it&rsquo;s either the <code>None</code> constructor (a &lsquo;data constructor&rsquo;) representing the lack of a value, or the <code>Some</code> constructor and a value of <code>T</code>. To declare values,</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="kd">let</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Some</span><span class="p">(</span><span class="s">&#34;foo&#34;</span><span class="p">.</span><span class="n">to_string</span><span class="p">());</span><span class="w"> </span><span class="c1">// declaring a value of type Option&lt;String&gt;
+</span><span class="c1"></span><span class="kd">let</span><span class="w"> </span><span class="n">b</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="kt">usize</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Some</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">declaring</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="k">type</span> <span class="nb">Option</span><span class="o">&lt;</span><span class="kt">usize</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">but</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">type</span> <span class="nc">annotation</span></code></pre></div>
+<p>A note about type annotations: it&rsquo;s required at function boundaries but locally types are inferred. It&rsquo;s considered idiomatic to leave the annotation off if you can get away with it. There are some cases where it&rsquo;s needed, but that&rsquo;s outside the scope of today&rsquo;s post.</p>
+
+<p>Rust includes a way to pattern match on <code>enum</code> variants with the <code>match</code> keyword. If you haven&rsquo;t used a language with robust pattern matching before, it&rsquo;s really a pleasure to use.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">plus</span><span class="p">(</span><span class="n">a</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="kt">usize</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Option</span><span class="o">&lt;</span><span class="kt">usize</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="nb">Some</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">Some</span><span class="p">(</span><span class="n">v</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w">
+</span><span class="w">        </span><span class="nb">None</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">None</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
+<p>This is a simple case, it&rsquo;s pattern language is much more powerful; you could write a whole article just about <code>match</code>. Check out the <a href="https://cheats.rs/#pattern-matching">cheats.rs</a> listing of valid syntax for <code>match</code>. It replaces <code>if/else</code> expressions in a lot of cases.</p>
+
+<p>Here we take an <code>Option</code> value, add something to it (if it is a <code>Some</code> variant) and return that value. This is a common pattern, and <code>Option</code> has functions in the standard library to write this tersely.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">plus</span><span class="p">(</span><span class="n">a</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="kt">usize</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Option</span><span class="o">&lt;</span><span class="kt">usize</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">a</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">|</span><span class="n">v</span><span class="o">|</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w">
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
+<p><code>|| {}</code> is the syntax for a closure. Closures in Rust don&rsquo;t require any heap allocation, this is in line with the goals of the language which aims to provides us with a &ldquo;rich type system&rdquo; at no cost to performance.</p>
+
+<h3 id="struct">Struct</h3>
+
+<p><code>struct</code> is the way to declare new records. This will probably be more familiar to anyone with a background in C-based languages.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">struct</span> <span class="nc">A</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">field</span>: <span class="kt">usize</span>
+<span class="p">}</span></code></pre></div>
+<p>You can also declare an &lsquo;anonymous&rsquo; record with the tuple syntax.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="kd">let</span><span class="w"> </span><span class="n">a</span>: <span class="p">(</span><span class="kt">usize</span><span class="p">,</span><span class="w"> </span><span class="kt">usize</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">again</span><span class="p">,</span><span class="w"> </span><span class="k">type</span> <span class="nc">annotation</span><span class="w"> </span><span class="n">not</span><span class="w"> </span><span class="n">needed</span></code></pre></div>
+<p>Structs can and often do hold generic types as well.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">struct</span> <span class="nc">Foo</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">field</span>: <span class="nc">T</span><span class="w">
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
+<h3 id="impl">Impl</h3>
+
+<p>With both <code>enum</code> and <code>struct</code> we can make an implementation for the data type we have defined. I find it best to think of an <code>impl</code> as a set of transformations available to your type. This is about as close to the notion of OO as we&rsquo;re going to get in Rust. You can have a <code>struct</code> with an <code>impl</code>, and if you squint hard enough it <em>almost</em> looks like an object:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">struct</span> <span class="nc">Thangs</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">list</span>: <span class="nb">Vec</span><span class="o">&lt;</span><span class="n">Thang</span><span class="o">&gt;</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">struct</span> <span class="nc">Thang</span><span class="p">;</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">impl</span><span class="w"> </span><span class="n">Thangs</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="c1">// *note* there is nothing special about `new` here, it&#39;s just convention
+</span><span class="c1"></span><span class="w">    </span><span class="k">fn</span> <span class="nf">new</span><span class="p">()</span><span class="w"> </span>-&gt; <span class="nc">Self</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">Self</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="n">list</span>: <span class="nc">vec</span><span class="o">!</span><span class="p">[]</span><span class="w">
+</span><span class="w">        </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">add_thang</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">thang</span>: <span class="nc">Thang</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="bp">self</span><span class="p">.</span><span class="n">list</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">thang</span><span class="p">);</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="c1">// *note* the &amp;mut self in add_thangs requires us to declare mut below
+</span><span class="c1"></span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">thangs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Thangs</span>::<span class="n">new</span><span class="p">();</span><span class="w">
+</span><span class="w">    </span><span class="n">thangs</span><span class="p">.</span><span class="n">add_thang</span><span class="p">(</span><span class="n">Thang</span><span class="p">);</span><span class="w">
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
+<p>Contrasting with Java, the <code>value.method()</code> syntax actually is actually just sugar over a &ldquo;universal function call syntax&rdquo;. We could call the method by passing <code>&amp;mut self</code> in ourselves:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">thangs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Thangs</span>::<span class="n">new</span><span class="p">();</span><span class="w">
+</span><span class="w"></span><span class="n">Thangs</span>::<span class="n">add_thang</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">thangs</span><span class="p">,</span><span class="w"> </span><span class="n">Thang</span><span class="p">);</span></code></pre></div>
+<p>In my opinion, a good handle on Rust starts with an understanding of the basic data type definitions. <code>enum</code> and <code>struct</code> will be your bread and butter. In Java, something like <code>struct</code> and <code>impl</code> are stuck together in objects, where your data and methods cohabitate, this couples code together (I suppose intentionally). Before you think &ldquo;well why can&rsquo;t Rust just add objects&rdquo;, Java is also getting a struct-like feature. Coming in Java 14, &ldquo;Records&rdquo; will be added to the language. So it may actually be the case that next generation of Java code will end up looking more rust-ic than the inverse (I&rsquo;m in no way claiming Rust was the first to do sum &amp; product types). I&rsquo;ve even seen proposals in Java that have something like sum types, so go ahead, embrace algebraic data types!</p>
+
+<h2 id="stack-vs-heap">Stack vs Heap</h2>
+
+<h3 id="the-stack">The Stack</h3>
+
+<p>Rust doesn&rsquo;t have a garbage collector. You have much more control over how you allocate and where your values live. By default, everything exists on the stack. So this,</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">struct</span> <span class="nc">Thing</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">field</span>: <span class="kt">usize</span> <span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Thing</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">field</span>: <span class="mi">1</span><span class="w"> </span><span class="p">};</span><span class="w">
+</span><span class="w">    </span><span class="c1">// .. do stuff with a
+</span><span class="c1"></span><span class="p">}</span></code></pre></div>
+<p>Doesn&rsquo;t require any kind of dynamic memory allocation. The compiler can figure out the exact number of bytes that this is going to occupy in memory, there&rsquo;s even a trait for this called <code>Sized</code>. The compiler can also figure out how long this value is valid for. It has a defined starting point when it was created, and when it goes out of scope (at the end of main) it can be destroyed.</p>
+
+<p>Contrast this with Java, where you create instances of an object with <code>new</code>, which causes heap allocation and an implicit reference be stored in your variable, which is passed around by-value.</p>
+
+<h3 id="the-heap">The heap</h3>
+
+<p>We can make heap values in Rust too with <code>Box</code> (there are other smart pointers in the stdlib which also allocate, <code>Rc</code>, <code>Arc</code>, etc). You may ask why we would ever want to heap allocate if we can just keep putting things on the stack? The answer is varied, but one response has to do with the fact that not all types have a size that&rsquo;s statically available, so we can heap allocate to make the size known (we&rsquo;ll do an example of this). Other times, you may have a large bit of data, like a large struct, which would normally case a big copy when it gets moved around, by putting it behind a <code>Box</code> or other smart pointer, we can shrink the amount of data we move at the cost of the allocation.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">main</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Box</span>::<span class="n">new</span><span class="p">(</span><span class="n">Thing</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">field</span>: <span class="mi">1</span><span class="w"> </span><span class="p">});</span><span class="w">
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
+<p>Heap allocated values have a defined beginning and end too. There is a starting and ending scope for <code>a</code> when it will be created and destroyed. I find it helpful to think about what the value actually <em>looks</em> like that&rsquo;s in <code>a</code>. In the first example it was a struct with a single <code>usize</code> in it, but here the value on the stack is a pointer to some memory on the heap.</p>
+
+<p>Another use for <code>Box</code> is dynamic dispatch. With this we can get something like Java&rsquo;s objects,</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">trait</span><span class="w"> </span><span class="n">Foo</span><span class="w"> </span><span class="p">{}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">struct</span> <span class="nc">Thing</span><span class="p">;</span><span class="w">
+</span><span class="w"></span><span class="k">impl</span><span class="w"> </span><span class="n">Foo</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Thing</span><span class="w"> </span><span class="p">{}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">struct</span> <span class="nc">OtherThing</span><span class="p">;</span><span class="w">
+</span><span class="w"></span><span class="k">impl</span><span class="w"> </span><span class="n">Foo</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">OtherThing</span><span class="w"> </span><span class="p">{}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">main</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">a</span>: <span class="nb">Vec</span><span class="o">&lt;</span><span class="nb">Box</span><span class="o">&lt;</span><span class="n">dyn</span><span class="w"> </span><span class="n">Foo</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="nb">Box</span>::<span class="n">new</span><span class="p">(</span><span class="n">OtherThing</span><span class="p">),</span><span class="w"> </span><span class="nb">Box</span>::<span class="n">new</span><span class="p">(</span><span class="n">Thing</span><span class="p">)];</span><span class="w"> </span><span class="c1">// type optional
+</span><span class="c1"></span><span class="w">    </span><span class="c1">// we have 2 different structs in the same list here
+</span><span class="c1"></span><span class="w">    </span><span class="c1">// but we&#39;ve erased the concrete type and now only know it as a trait Foo
+</span><span class="c1"></span><span class="p">}</span></code></pre></div>
+<p>Don&rsquo;t worry about the <code>trait</code>, we&rsquo;ll visit this soon also. The important thing to gather here is that this is dynamic behaviour and it isn&rsquo;t free. We pay by being explicit in our program, and with the actual cost of heap allocation. There&rsquo;s some debate in the Rust community, but I think it&rsquo;s fair to say it&rsquo;s idiomatic to avoid heap allocation if it&rsquo;s easily avoidable.</p>
+
+<p>I found visual diagrams to be eminently helpful in getting all of this to sink in. The <a href="https://docs.google.com/presentation/d/1q-c7UAyrUlM-eZyTo1pd8SZ0qwA_wYxmPZVOQkoDmH4/edit#slide=id.p">Rust container cheat sheet</a> is a great resource.</p>
+
+<p>Lets take a look at a another type definition,</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">enum</span> <span class="nc">List</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">Nil</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">Cons</span><span class="p">((</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">))</span><span class="w">
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
+<p>This might look pretty foreign. <code>List&lt;T&gt;</code> can either be <code>Nil</code> meaning it hit the end of the list, or a <code>Cons</code> tuple holding a value and the rest of the list. Think about how this will look in memory if you were to create a value for it.</p>
+
+<p>Huh?</p>
+
+<p>It doesn&rsquo;t work.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">error<span class="o">[</span>E0072<span class="o">]</span>: recursive <span class="nb">type</span> <span class="sb">`</span>List<span class="sb">`</span> has infinite size
+ --&gt; src/lib.rs:7:1
+  <span class="p">|</span>
+<span class="m">7</span> <span class="p">|</span> enum List&lt;T&gt; <span class="o">{</span>
+  <span class="p">|</span> ^^^^^^^^^^^^ recursive <span class="nb">type</span> has infinite size
+<span class="m">8</span> <span class="p">|</span>     Nil,
+<span class="m">9</span> <span class="p">|</span>     Cons<span class="o">((</span>T, List&lt;T&gt;<span class="o">))</span>
+  <span class="p">|</span>          ------------ recursive without indirection
+  <span class="p">|</span>
+  <span class="o">=</span> help: insert indirection <span class="o">(</span>e.g., a <span class="sb">`</span>Box<span class="sb">`</span>, <span class="sb">`</span>Rc<span class="sb">`</span>, or <span class="sb">`</span><span class="p">&amp;</span><span class="sb">`</span><span class="o">)</span> at some point to make <span class="sb">`</span>List<span class="sb">`</span> representable</code></pre></div>
+<p>The error messages from the compiler are really top notch. There&rsquo;s a reason given and often <code>help</code> has a fix. It&rsquo;s telling us we can&rsquo;t make a recursive type like this without adding in some indirection so that the compiler can figure out it&rsquo;s size. Remember, if everything is on the stack by default, and stack values need to have a statically known size, then how can we have an n-sized linked list? Without a reference or a pointer to the next element on the list, how will the compiler statically figure out how much memory to use? Convince yourself this is true, thinking visually sometimes helps.</p>
+
+<p>We can <code>fix</code> this by adding indirection,</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">enum</span> <span class="nc">List</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">Nil</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">Cons</span><span class="p">((</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="nb">Box</span><span class="o">&lt;</span><span class="n">List</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span><span class="p">))</span><span class="w">
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
+<p>Now we have the worlds most terrible linked list. If you liked this example, consider reading <a href="http://cglab.ca/~abeinges/blah/too-many-lists/book/">too many linked lists</a>. You may find smart pointer types in definitions from time to time</p>
+
+<h2 id="traits">Traits</h2>
+
+<h3 id="motivating-example">Motivating example</h3>
+
+<p>To illustrate some differences in encoding problems in Java v Rust, let&rsquo;s look at another (admittedly toy) problem:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">enum</span> <span class="nc">Shape</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">Circle</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">radius</span>: <span class="kt">f32</span> <span class="p">},</span><span class="w">
+</span><span class="w">    </span><span class="n">Rectangle</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">width</span>: <span class="kt">f32</span><span class="p">,</span><span class="w"> </span><span class="n">height</span>: <span class="kt">f32</span> <span class="p">},</span><span class="w">
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
+<p>We want to get the <code>area</code> for this type, so maybe we make a function:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">impl</span><span class="w"> </span><span class="n">Shape</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">area</span><span class="p">(</span><span class="bp">self</span>: <span class="nc">Area</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kt">f32</span> <span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="k">match</span><span class="w"> </span><span class="n">area</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="n">Circle</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">radius</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">std</span>::<span class="kt">f32</span>::<span class="n">consts</span>::<span class="n">PI</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">powi</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="w">
+</span><span class="w">            </span><span class="n">Rectangle</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">width</span><span class="p">,</span><span class="w"> </span><span class="n">height</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">width</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">height</span><span class="p">,</span><span class="w">
+</span><span class="w">        </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
+<p>Encapsulation &amp; visibility in Java has a lot of forms at the class level. In Rust, functions and types are either <code>pub</code> (for public), or not (local to the module). Visibility to other members is controlled by the module system, I recommend reading the <a href="https://doc.rust-lang.org/reference/visibility-and-privacy.html">Rust reference</a>.</p>
+
+<p>Back to our example. In Java, we may make a <code>Shape</code> parent class or interface, and have a <code>Circle</code> and <code>Rectangle</code> class, each implementing the <code>area</code> method. If we think about the differences between the Rust and Java implementation, a few things become clear:</p>
+
+<ul>
+<li>If we to want another <code>Shape</code>:
+
+<ul>
+<li>Java: we just need to declare another class and implement <code>Shape</code></li>
+<li>Rust: we have to modify the original <code>Shape</code> definition <em>and</em> everywhere it&rsquo;s used (<code>match</code> will refuse to compile unless it handles all the possible variants)</li>
+</ul></li>
+<li>If we want a new function for <code>Shape</code>:
+
+<ul>
+<li>Java: we have to modify the original <code>Shape</code> &lsquo;contract&rsquo;, meaning we have to add a new function to the interface, and everyone who implements this interface must be changed</li>
+<li>Rust: we can just add a new <code>impl</code></li>
+</ul></li>
+</ul>
+
+<p>This has been described before as the &lsquo;expression problem&rsquo;. It illustrates some central differences between approaches to languages. This isn&rsquo;t meant to detract from using <code>enum</code> in Rust or using interfaces/classes in Java. Generally, we <em>want</em> Rust to do exhaustiveness analysis with <code>match</code> and <code>enum</code>s. But it begs the question, &ldquo;Can we write it in a way which doesn&rsquo;t require modification of existing code?&rdquo;</p>
+
+<p>I think traits provide a pretty nice solution,</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">trait</span><span class="w"> </span><span class="n">Area</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">area</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kt">f32</span><span class="p">;</span><span class="w"> </span><span class="c1">// we could even return a generic or associated type here
+</span><span class="c1"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">struct</span> <span class="nc">Rectangle</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">width</span>: <span class="kt">f32</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">height</span>: <span class="kt">f32</span>
+<span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">struct</span> <span class="nc">Circle</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">radius</span>: <span class="kt">f32</span>
+<span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">impl</span><span class="w"> </span><span class="n">Area</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Rectangle</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">area</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kt">f32</span> <span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="bp">self</span><span class="p">.</span><span class="n">width</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">height</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">impl</span><span class="w"> </span><span class="n">Area</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Circle</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">area</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kt">f32</span> <span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">std</span>::<span class="kt">f32</span>::<span class="n">consts</span>::<span class="n">PI</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">radius</span><span class="p">.</span><span class="n">powi</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
+<p>Now, if we need to add a new function to <code>Circle</code> or <code>Rectangle</code>, say <code>perimeter</code>, we can do it without modifying the original trait or types:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">trait</span><span class="w"> </span><span class="n">Perimeter</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">perimeter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kt">f32</span><span class="p">;</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">impl</span><span class="w"> </span><span class="n">Perimeter</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Rectangle</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">perimeter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kt">f32</span> <span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="mf">2.</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">width</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">height</span><span class="p">)</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="o">//</span><span class="w"> </span><span class="n">etc</span></code></pre></div>
+<p>We&rsquo;re also free to add more shapes. And, we can write functions that take any type which has a perimeter, or perimeter <em>and</em> area,</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">do_something</span><span class="o">&lt;</span><span class="n">T</span>: <span class="nc">Perimeter</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Area</span><span class="o">&gt;</span><span class="p">(</span><span class="n">shape</span>: <span class="nc">T</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// only accept types who have both a Perimeter and Area impl
+</span><span class="c1"></span><span class="w">    </span><span class="n">unimplemented</span><span class="o">!</span><span class="p">()</span><span class="w"> </span><span class="c1">// hot tip: this macro is invaluable. it satisfies the type checker without providing an implementation
+</span><span class="c1"></span><span class="p">}</span></code></pre></div>
+<h3 id="traits-generics">Traits &amp; Generics</h3>
+
+<p>The traits implementation in Rust is expressive. You may have heard it compared to operator overloading, which Java lacks. I think this is a fair introduction to it&rsquo;s feature set. In Java, overloading is shunned. Not so in Rust, traits are provided for you to implement and conform to their specification, gaining access to built-in syntax and interoperability. Consider that you can plug-in to the language&rsquo;s syntax with traits; that&rsquo;s how the whole ecosystem works. There&rsquo;s the <code>Future</code> trait for await-able computations, there&rsquo;s <code>Iterator</code> and <code>IntoIterator</code> to use <code>for..in</code>, <code>Index</code> for <code>[]</code>, not to mention <code>Add</code>, <code>Sub</code>, <code>Mul</code>, etc for arithmetic operations. As a minimal example, let&rsquo;s make a type work with <a href="https://doc.rust-lang.org/std/ops/trait.Add.html"><code>Add</code></a></p>
+
+<p>Here is our <code>Add</code> definition from std,</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">trait</span><span class="w"> </span><span class="n">Add</span><span class="o">&lt;</span><span class="n">Rhs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Self</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// 1
+</span><span class="c1"></span><span class="w">    </span><span class="k">type</span> <span class="nc">Output</span><span class="p">;</span><span class="w"> </span><span class="c1">// 2
+</span><span class="c1"></span><span class="w">    </span><span class="k">fn</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">rhs</span>: <span class="nc">Rhs</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">Self</span>::<span class="n">Output</span><span class="p">;</span><span class="w"> </span><span class="c1">// 3
+</span><span class="c1"></span><span class="p">}</span></code></pre></div>
+<p>Std declares a trait <code>Add</code> with a type parameter called <code>Rhs</code> that defaults to <code>Self</code>&ndash; the implementor of the trait (1). It has an &ldquo;associated type&rdquo; called <code>Output</code> (2) and defines a method called <code>add</code> that takes <code>self</code> by value (takes ownership of <code>self</code>) and a parameter <code>rhs</code> of type <code>Rhs</code> (the type param passed in), and returns the type associated with <code>Output</code> (3).</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">use</span><span class="w"> </span><span class="n">std</span>::<span class="n">ops</span>::<span class="n">Add</span><span class="p">;</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="cp">#[derive(Debug)]</span><span class="w">
+</span><span class="w"></span><span class="k">struct</span> <span class="nc">Content</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// 1
+</span><span class="c1"></span><span class="w">    </span><span class="n">val</span>: <span class="nc">T</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">impl</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Add</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Content</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="c1">// 2
+</span><span class="c1"></span><span class="k">where</span><span class="w">
+</span><span class="w">    </span><span class="n">T</span>: <span class="nc">Add</span><span class="p">,</span><span class="w"> </span><span class="c1">// 3
+</span><span class="c1"></span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">type</span> <span class="nc">Output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Content</span><span class="o">&lt;&lt;</span><span class="n">T</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">Add</span><span class="o">&gt;</span>::<span class="n">Output</span><span class="o">&gt;</span><span class="p">;</span><span class="w"> </span><span class="c1">// 4
+</span><span class="c1"></span><span class="w">    </span><span class="k">fn</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">rhs</span>: <span class="nc">Content</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">Self</span>::<span class="n">Output</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">Content</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="n">val</span>: <span class="nc">self</span><span class="p">.</span><span class="n">val</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">rhs</span><span class="p">.</span><span class="n">val</span><span class="p">,</span><span class="w">
+</span><span class="w">        </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Content</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">val</span>: <span class="mi">2</span><span class="w"> </span><span class="p">};</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Content</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">val</span>: <span class="mi">5</span><span class="w"> </span><span class="p">};</span><span class="w">
+</span><span class="w">    </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{:?}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="p">);</span><span class="w"> </span><span class="c1">// Content { val: 7 }
+</span><span class="c1"></span><span class="p">}</span></code></pre></div>
+<p>We&rsquo;re declaring a new type <code>Content</code> that&rsquo;s valid for any <code>T</code> (1). In the implementation for <code>Add</code>, we say that <code>Content</code> has an <code>Add</code> implementation (2) so long as the thing that&rsquo;s in <code>Content</code> <em>also</em> has an <code>Add</code> impl (3). After that, we specify the <code>Output</code> associated type is going to be <code>Content</code> of <code>Output</code> of <code>T</code> when it impls <code>Add</code> (4). Don&rsquo;t worry if that all doesn&rsquo;t make sense at first, once you write a few implementations it will start to click. I think it&rsquo;s kind of cool that most of this program is actually about the type system. We only have a few lines that actually &ldquo;do&rdquo; anything, this should give you a feel for what programming in Rust is like. You are predominantly designing at the type level, then convincing Rust your program is well-formed, and it makes a pretty good pair programmer at pointing out your errors.</p>
+
+<p>It should be noted by default all generic parameters are implicitly bounded by <code>Sized</code>, meaning if you write <code>fn foo&lt;T&gt;(t: T) -&gt; T</code>, it&rsquo;s implied that <code>T: Sized</code>. You have to opt out of this constraint with <code>T: ?Sized</code>. Specifying that <code>T</code> <em>might</em> be unsized. For more info, check out the <a href="https://doc.rust-lang.org/book/ch19-04-advanced-types.html#dynamically-sized-types-and-the-sized-trait">Unsized Types</a> chapter.</p>
+
+<h2 id="polymorphism">Polymorphism</h2>
+
+<p>In Java polymorphism usually means inheritance. That&rsquo;s not really true outside the OO world, certainly not in Rust, which lacks Java&rsquo;s version of the feature altogether. Java&rsquo;s brand of polymorphism is subtype polymorphism, whereas Rust is parametric and ad-hoc polymorphism. Parametric polymorphism just means we can pass around generic type parameters, and ad-hoc refers to the way we can bound these type parameters to traits (with <code>&lt;T: Trait&gt;</code>).</p>
+
+<p>Practically, knowing the &lsquo;correct&rsquo; terminology isn&rsquo;t super important. The important things to know are that you can declare data structures with <code>enum</code> or <code>struct</code> and define an implementation with <code>impl</code>, and you can <code>impl</code> various traits in order to extend your type with functionality. You can also bound types by allowing only certain implementors to call. Let&rsquo;s take an example,</p>
+
+<p>There are many different string types in Rust. There&rsquo;s <code>str</code>, <code>String</code>, <code>OsStr</code>, <code>OsString</code>, <code>CString</code> and <code>CStr</code> (did I miss any?). Practically, the common ones are <code>str</code> and <code>String</code>, the other&rsquo;s are special purpose. If we declare a function that we want to take a string, which type should we use?</p>
+
+<p><code>&amp;str</code> is a good choice, you can pass a <code>&amp;str</code> or even <code>&amp;String</code> and it will work because <code>String</code> implements the trait <code>Deref&lt;Target=str&gt;</code> (the <code>Target=</code> syntax means that <code>Target</code> is an &ldquo;associated type&rdquo;). But we could be more generic with a polymorphic type.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">foo</span><span class="o">&lt;</span><span class="n">S</span>: <span class="nb">AsRef</span><span class="o">&lt;</span><span class="kt">str</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">s</span>: <span class="nc">S</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">unimplemented</span><span class="o">!</span><span class="p">()</span><span class="w">
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
+<p><code>AsRef</code> is a conversion trait in the <a href="https://doc.rust-lang.org/std/convert/trait.AsRef.html">stdlib</a>. It&rsquo;s defined as:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">trait</span><span class="w"> </span><span class="nb">AsRef</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w">
+</span><span class="w"></span><span class="k">where</span><span class="w">
+</span><span class="w">    </span><span class="n">T</span>: <span class="o">?</span><span class="nb">Sized</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">as_ref</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kp">&amp;</span><span class="nc">T</span><span class="p">;</span><span class="w">
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
+<p>It&rsquo;s a trait that takes a type parameter T, that <em>may</em> be unsized, and defines a function which turns that type into a <code>&amp;T</code>. If we call our original function <code>foo</code> with a <code>String</code>,</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="kd">let</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">String</span>::<span class="n">from</span><span class="p">(</span><span class="s">&#34;stuff&#34;</span><span class="p">);</span><span class="w">
+</span><span class="w"></span><span class="n">foo</span><span class="p">(</span><span class="n">a</span><span class="p">);</span></code></pre></div>
+<p>Why does this work? See if you can figure it out for yourself (if you need a <a href="https://doc.rust-lang.org/std/string/struct.String.html#implementations">hint</a>). When writing idiomatic Rust, it&rsquo;s crucial to get to know the built in <a href="https://stevedonovan.github.io/rustifications/2018/09/08/common-rust-traits.html">conversion traits</a> available in the stdlib.</p>
+
+<p>There are lots of other examples I could show, but this post is already too long. Essentially, traits are used to encapsulate behaviours that a type can have. A type implements these behaviours in order to gain that set of functionality. In a lot of ways it works like an interface in Java (especially since Java introduced default implementations in interfaces). But Java naturally lends itself to a style that&rsquo;s very inheritance-centric. It&rsquo;s popular in the OO world to repeat the mantra &ldquo;composition over inheritance&rdquo;. In Rust, you don&rsquo;t have an option, it&rsquo;s composition all the way.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>There&rsquo;s such a breadth of topics that I could have possibly covered in this article, I really didn&rsquo;t know where to start. I hope I&rsquo;ve at least illuminated something for the beginners out there. Feel free to contact me if you&rsquo;ve got some ideas for new things you&rsquo;d like to see explored. If you are just starting out with Rust and feeling a little overwhelmed, don&rsquo;t worry! All of these topics can feel new and different, the only cure is reading and writing lots of Rust. Stick with it!</p>
+
+<p>Until next time.</p>
+
+<h4 id="note-on-generics-in-java-v-rust">Note: on generics in Java v Rust</h4>
+
+<p>When Java was first released, they didn&rsquo;t include an implementation of generics. The feature was highly sought after because it allowed greater type safety and could remove some explicit casts. Java&rsquo;s bytecode has no concept of a generic type parameter though, and it was important to maintain backwards compatibility. So, after the Java compiler confirms that all the generic bounds are satisfied (specified in Java similarly with <code>&lt;T&gt;</code> or <code>&lt;T extends Class&gt;</code>), Java does something called <a href="https://docs.oracle.com/javase/tutorial/java/generics/erasure.html">type erasure</a>. The basics of type erasure are that all type params are replaced with <code>Object</code> and are therefore unbounded in the final bytecode. I&rsquo;m not going to critique Java&rsquo;s choice of implementation, but suffice to say there is one specific drawback I want to mention: indirection. Due to type erasure, generic arguments are passed as pointers to a vtable because we lost some information at compile time on the concrete type of the argument.</p>
+
+<p>Rust&rsquo;s generics implementation doesn&rsquo;t use type erasure. In the <code>foo</code> method above, for each caller of <code>foo</code> that is using a different concrete type, a brand new version of <code>foo</code> will be generated and compiled. That means if <code>foo</code> get&rsquo;s called with 4 different implementors of <code>AsRef&lt;str&gt;</code> we could potentially get 4 different versions of the function in our final running code. This process is referred to as &lsquo;monomorphization&rsquo;. The main advantage of this method is that it&rsquo;s fast and Rust wants to provide &ldquo;zero cost abstractions&rdquo;. All generic calls are statically dispatched (unless explicitly <code>Box</code>&lsquo;ed), we don&rsquo;t have to heap allocate a new <code>Object</code> or pass around a vtable unless we want to. It should be mentioned that a disadvantage of this route is final code size and compilation time. Depending just how many different variations there are of our functions, and how many implementations we need to generate, that&rsquo;s more code that has to go through LLVM lengthening compile times and increasing volume of actual code produced.</p>
+
+
+        
+
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://leshow.github.io/post/rotary_encoder_hal/" data-toggle="tooltip" data-placement="top" title="Rotary Encoders in Embedded Rust">&larr; Previous Post</a>
+            </li>
+          
+          
+        </ul>
+      
+
+
+      
+        
+        
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="mailto:cameron.evan@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://github.com/leshow" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/evan_cam_" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://linkedin.com/in/evan-cameron" title="LinkedIn">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-linkedin fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              <a href="leshow.github.io">Evan Cameron</a>
+            
+          
+
+          &nbsp;&bull;&nbsp;
+          2020
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://leshow.github.io">Esoterically Typed</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.37.1</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.js" integrity="sha384-/y1Nn9+QQAipbNQWU65krzJralCnuOasHncUFXGkdwntGeSvQicrYkiUBwsgUqc1" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/contrib/auto-render.min.js" integrity="sha384-dq1/gEHSxPZQ7DdrM82ID4YVol9BYyU7GbWlIwnwyPzotpoc57wDw/guX8EaYGPx" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/main.js"></script>
+<script src="https://leshow.github.io/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> $(document).ready(function() {$("pre.chroma").css("padding","0");}); </script><script> renderMathInElement(document.body); </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+  </body>
+</html>
+
