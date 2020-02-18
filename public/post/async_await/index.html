@@ -22,7 +22,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Esoterically Typed" />
 
-  <meta name="generator" content="Hugo 0.54.0" />
+  <meta name="generator" content="Hugo 0.37.1" />
   <link rel="canonical" href="https://leshow.github.io/post/async_await/" />
   <link rel="alternate" href="https://leshow.github.io/index.xml" type="application/rss+xml" title="Esoterically Typed">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.css" integrity="sha384-wITovz90syo1dJWVh32uuETPVEtGigN07tkttEqPv+uR2SE/mbQcG7ATL28aI9H0" crossorigin="anonymous">
@@ -84,16 +84,12 @@
     </div>
 </div>
 
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-145420817-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+<script>
+window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+ga('create', 'UA-145420817-1', 'auto');
+ga('send', 'pageview');
 </script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script async src='//www.google-analytics.com/analytics.js'></script>
 
 </head>
 
@@ -176,7 +172,7 @@ if (!doNotTrack) {
   
   
   &nbsp;|&nbsp;
-  <i class="fa fa-clock-o"></i> 5 minutes (910 words)
+  <i class="fa fa-clock-o"></i> 5 minutes (908 words)
   
   
 </span>
@@ -241,8 +237,7 @@ if (!doNotTrack) {
 </span><span class="w">            </span><span class="n">body</span>: <span class="nc">serde_json</span>::<span class="n">from_slice</span><span class="p">(</span><span class="o">&amp;</span><span class="n">payload</span><span class="p">[..])</span><span class="o">?</span><span class="p">,</span><span class="w">
 </span><span class="w">        </span><span class="p">}))</span><span class="w">
 </span><span class="w">    </span><span class="p">}</span><span class="w">
-</span><span class="w"></span><span class="p">}</span><span class="w">
-</span></code></pre></div>
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
 <p>Using a more or less direct translation would lead to (futures-preview):</p>
 <div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">use</span><span class="w"> </span><span class="n">futures</span>::<span class="p">{</span><span class="n">future</span>::<span class="n">Future</span><span class="p">,</span><span class="w"> </span><span class="n">ready</span><span class="p">,</span><span class="w"> </span><span class="n">Poll</span><span class="p">};</span><span class="w">
 </span><span class="w"></span><span class="k">use</span><span class="w"> </span><span class="n">serde</span>::<span class="n">de</span>::<span class="n">DeserializeOwned</span><span class="p">;</span><span class="w">
@@ -274,8 +269,7 @@ if (!doNotTrack) {
 </span><span class="w">            </span><span class="n">body</span>: <span class="nc">serde_json</span>::<span class="n">from_slice</span><span class="p">(</span><span class="o">&amp;</span><span class="n">buf</span><span class="p">[..])</span><span class="o">?</span><span class="p">,</span><span class="w">
 </span><span class="w">        </span><span class="p">}))</span><span class="w">
 </span><span class="w">    </span><span class="p">}</span><span class="w">
-</span><span class="w"></span><span class="p">}</span><span class="w">
-</span></code></pre></div>
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
 <p>There&rsquo;s a couple important things to note here. <code>Future::poll</code> no longer has associated types <code>Item</code> and <code>Error</code>. Instead, there is now a single type <code>Output</code> that if you want to represent something that can fail, should return a <code>Result</code>.</p>
 
 <p>The <code>Poll</code> type synonym has changed; gone is the <code>Async</code> type, it&rsquo;s been replaced by the enum <code>Poll</code>, with variants <code>Ready</code> or <code>Pending</code>.</p>
@@ -321,8 +315,7 @@ if (!doNotTrack) {
 </span><span class="w">            </span><span class="n">body</span>: <span class="nc">serde_json</span>::<span class="n">from_slice</span><span class="p">(</span><span class="o">&amp;</span><span class="n">payload</span><span class="p">[..])</span><span class="o">?</span><span class="p">,</span><span class="w">
 </span><span class="w">        </span><span class="p">})</span><span class="w">
 </span><span class="w">    </span><span class="p">}</span><span class="w">
-</span><span class="w"></span><span class="p">}</span><span class="w">
-</span></code></pre></div>
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
 <p>I think it&rsquo;s a huge improvement, both in ease of implementation and the end result of the API it enables. It&rsquo;s a little less generic, but only because I chose to not parameterize <code>UnixStream</code> above.</p>
 
 <p>That brings me to what I think is the salient thing about this new syntax: it enables a synchronous looking API that is a pleasure to read and write. It gets rid of a lot of the sharp edges in writing futures code (threading streams through combinators, dealing with <code>Poll</code>, and <code>try_ready</code>, etc). Error handling is also, so, so much nicer this time around.</p>
@@ -342,13 +335,11 @@ if (!doNotTrack) {
 </span><span class="w">    </span><span class="p">})</span><span class="w">
 </span><span class="w">    </span><span class="p">.</span><span class="n">map_err</span><span class="p">(</span><span class="o">|</span><span class="n">err</span><span class="o">|</span><span class="w"> </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">err</span><span class="p">));</span><span class="w">
 </span><span class="w"></span><span class="n">tokio</span>::<span class="n">spawn</span><span class="p">(</span><span class="n">sender</span><span class="p">);</span><span class="w">
-</span><span class="w"></span><span class="c1">// code removed
-</span></code></pre></div>
+</span><span class="w"></span><span class="o">//</span><span class="w"> </span><span class="n">code</span><span class="w"> </span><span class="n">removed</span></code></pre></div>
 <p>tokio&rsquo;s <code>FramedRead</code> implements the <code>Stream</code> trait, so really all I needed to do was add a method that returned it from my type:</p>
 <div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">listen</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">FramedRead</span><span class="o">&lt;</span><span class="n">UnixStream</span><span class="p">,</span><span class="w"> </span><span class="n">codec</span>::<span class="n">EventCodec</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
 </span><span class="w">    </span><span class="n">FramedRead</span>::<span class="n">new</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">codec</span>::<span class="n">EventCodec</span><span class="p">)</span><span class="w">
-</span><span class="w"></span><span class="p">}</span><span class="w">
-</span></code></pre></div>
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
 <p>You can use <code>Stream</code>s in a <code>while let</code> loop</p>
 <div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="cp">#[tokio::main]</span><span class="w">
 </span><span class="w"></span><span class="n">async</span><span class="w"> </span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span>-&gt; <span class="nc">io</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
@@ -360,8 +351,7 @@ if (!doNotTrack) {
 </span><span class="w">        </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{:#?}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">event</span><span class="o">?</span><span class="p">);</span><span class="w">
 </span><span class="w">    </span><span class="p">}</span><span class="w">
 </span><span class="w">    </span><span class="nb">Ok</span><span class="p">(())</span><span class="w">
-</span><span class="w"></span><span class="p">}</span><span class="w">
-</span></code></pre></div>
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
 <p>The implicit runtimes enabled by proc macros are really a boon to readability.</p>
 
 <h2 id="conclusion">Conclusion</h2>
@@ -447,7 +437,7 @@ if (!doNotTrack) {
           
 
           &nbsp;&bull;&nbsp;
-          2019
+          2020
 
           
             &nbsp;&bull;&nbsp;
@@ -456,7 +446,7 @@ if (!doNotTrack) {
         </p>
         
         <p class="credits theme-by text-muted">
-          <a href="http://gohugo.io">Hugo v0.54.0</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          <a href="http://gohugo.io">Hugo v0.37.1</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
           
         </p>
       </div>

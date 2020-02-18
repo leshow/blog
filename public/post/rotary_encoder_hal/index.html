@@ -24,7 +24,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Esoterically Typed" />
 
-  <meta name="generator" content="Hugo 0.54.0" />
+  <meta name="generator" content="Hugo 0.37.1" />
   <link rel="canonical" href="https://leshow.github.io/post/rotary_encoder_hal/" />
   <link rel="alternate" href="https://leshow.github.io/index.xml" type="application/rss+xml" title="Esoterically Typed">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.css" integrity="sha384-wITovz90syo1dJWVh32uuETPVEtGigN07tkttEqPv+uR2SE/mbQcG7ATL28aI9H0" crossorigin="anonymous">
@@ -86,16 +86,12 @@
     </div>
 </div>
 
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-	ga('create', 'UA-145420817-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+<script>
+window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+ga('create', 'UA-145420817-1', 'auto');
+ga('send', 'pageview');
 </script>
-<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script async src='//www.google-analytics.com/analytics.js'></script>
 
 </head>
 
@@ -315,15 +311,13 @@ if (!doNotTrack) {
 </span><span class="w">            </span><span class="n">_</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Direction</span>::<span class="nb">None</span><span class="p">,</span><span class="w">
 </span><span class="w">        </span><span class="p">}</span><span class="w">
 </span><span class="w">    </span><span class="p">}</span><span class="w">
-</span><span class="w"></span><span class="p">}</span><span class="w">
-</span></code></pre></div>
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
 <p>I&rsquo;ve got a <code>Rotary</code> struct that holds both pins and state.</p>
 <div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">struct</span> <span class="nc">Rotary</span><span class="o">&lt;</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">B</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
 </span><span class="w">    </span><span class="n">pin_a</span>: <span class="nc">A</span><span class="p">,</span><span class="w">
 </span><span class="w">    </span><span class="n">pin_b</span>: <span class="nc">B</span><span class="p">,</span><span class="w">
 </span><span class="w">    </span><span class="n">state</span>: <span class="kt">u8</span><span class="p">,</span><span class="w">
-</span><span class="w"></span><span class="p">}</span><span class="w">
-</span></code></pre></div>
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
 <p>Now for the <code>embedded-hal</code> part. How can we say that <code>A</code> and <code>B</code> are gpio pins? <code>embedded-hal</code> helpfully exposes an <code>InputPin</code> trait, that has methods <code>is_low()</code> and <code>is_high()</code> for reading the state of the pins. Using this, we can constrain the implementation of <code>Rotary</code> to take two generic pins.</p>
 <div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">impl</span><span class="o">&lt;</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">B</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Rotary</span><span class="o">&lt;</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">B</span><span class="o">&gt;</span><span class="w">
 </span><span class="w"></span><span class="k">where</span><span class="w">
@@ -338,8 +332,7 @@ if (!doNotTrack) {
 </span><span class="w">        </span><span class="p">}</span><span class="w">
 </span><span class="w">    </span><span class="p">}</span><span class="w">
 </span><span class="w">    </span><span class="c1">//...
-</span><span class="c1"></span><span class="p">}</span><span class="w">
-</span></code></pre></div>
+</span><span class="c1"></span><span class="p">}</span></code></pre></div>
 <p><code>Rotary</code> exposes an <code>update()</code> method, that when called reads the value for <code>pin_a</code> and <code>pin_b</code> into <code>state</code> using bitwise &lsquo;or&rsquo;.</p>
 <div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">update</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="n">Direction</span><span class="p">,</span><span class="w"> </span><span class="n">Either</span><span class="o">&lt;</span><span class="n">A</span>::<span class="n">Error</span><span class="p">,</span><span class="w"> </span><span class="n">B</span>::<span class="n">Error</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
 </span><span class="w">    </span><span class="c1">// use mask to get previous state value
@@ -355,8 +348,7 @@ if (!doNotTrack) {
 </span><span class="c1"></span><span class="w">    </span><span class="bp">self</span><span class="p">.</span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w">
 </span><span class="w">    </span><span class="c1">// and here we use the From&lt;u8&gt; implementation above to return a Direction
 </span><span class="c1"></span><span class="w">    </span><span class="nb">Ok</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">into</span><span class="p">())</span><span class="w">
-</span><span class="w"></span><span class="p">}</span><span class="w">
-</span></code></pre></div>
+</span><span class="w"></span><span class="p">}</span></code></pre></div>
 <p>I hope you liked that little foray into the world of Rust embedded! I&rsquo;m a beginner in this space myself, so if anything seems out of sorts, let me know. Thanks for reading.</p>
 
 
@@ -372,6 +364,10 @@ if (!doNotTrack) {
               <a href="https://leshow.github.io/post/async_await/" data-toggle="tooltip" data-placement="top" title="Updating to Async/Await">&larr; Previous Post</a>
             </li>
           
+          
+            <li class="next">
+              <a href="https://leshow.github.io/post/rust_for_java_devs/" data-toggle="tooltip" data-placement="top" title="Rust for Java Devs">Next Post &rarr;</a>
+            </li>
           
         </ul>
       
@@ -434,7 +430,7 @@ if (!doNotTrack) {
           
 
           &nbsp;&bull;&nbsp;
-          2019
+          2020
 
           
             &nbsp;&bull;&nbsp;
@@ -443,7 +439,7 @@ if (!doNotTrack) {
         </p>
         
         <p class="credits theme-by text-muted">
-          <a href="http://gohugo.io">Hugo v0.54.0</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          <a href="http://gohugo.io">Hugo v0.37.1</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
           
         </p>
       </div>
