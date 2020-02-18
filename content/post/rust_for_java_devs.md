@@ -1,7 +1,7 @@
 ---
 title: "Rust for Java Devs"
 date: 2020-02-18T10:23:50-05:00
-draft: true
+draft: false
 ---
 
 In a change for this blog I want to leave the more bleeding edge topics and focus on perhaps one of the most important things one can do in the Rust community: teaching new Rust developers. I've been thinking about how best to approach teaching Rust to those used to working with Java, in order to bring a group of developers up to speed with the language for a new project.
