@@ -1,6 +1,6 @@
 ---
 title: "Rust for Java Devs"
-date: 2020-02-02T22:23:50-05:00
+date: 2020-02-18T10:23:50-05:00
 draft: true
 ---
 
