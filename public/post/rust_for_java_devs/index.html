@@ -176,7 +176,7 @@ if (!doNotTrack) {
   
   
   &nbsp;|&nbsp;
-  <i class="fa fa-clock-o"></i> 18 minutes (3729 words)
+  <i class="fa fa-clock-o"></i> 18 minutes (3728 words)
   
   
 </span>
@@ -391,10 +391,10 @@ if (!doNotTrack) {
 </span></code></pre></div>
 <p>We want to get the <code>area</code> for this type, so maybe we make a function:</p>
 <div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">impl</span><span class="w"> </span><span class="n">Shape</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">area</span><span class="p">(</span><span class="bp">self</span>: <span class="nc">Area</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kt">f32</span> <span class="p">{</span><span class="w">
-</span><span class="w">        </span><span class="k">match</span><span class="w"> </span><span class="n">area</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span><span class="w">            </span><span class="n">Circle</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">radius</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">std</span>::<span class="kt">f32</span>::<span class="n">consts</span>::<span class="n">PI</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">powi</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="w">
-</span><span class="w">            </span><span class="n">Rectangle</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">width</span><span class="p">,</span><span class="w"> </span><span class="n">height</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">width</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">height</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">area</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kt">f32</span> <span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="k">match</span><span class="w"> </span><span class="bp">self</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="n">Shape</span>::<span class="n">Circle</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">radius</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">std</span>::<span class="kt">f32</span>::<span class="n">consts</span>::<span class="n">PI</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">radius</span><span class="p">.</span><span class="n">powi</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="w">
+</span><span class="w">            </span><span class="n">Shape</span>::<span class="n">Rectangle</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">width</span><span class="p">,</span><span class="w"> </span><span class="n">height</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">width</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">height</span><span class="p">,</span><span class="w">
 </span><span class="w">        </span><span class="p">}</span><span class="w">
 </span><span class="w">    </span><span class="p">}</span><span class="w">
 </span><span class="w"></span><span class="p">}</span><span class="w">
