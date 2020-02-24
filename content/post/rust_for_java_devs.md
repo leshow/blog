@@ -247,10 +247,10 @@ We want to get the `area` for this type, so maybe we make a function:
 
 ```rust
 impl Shape {
-    pub fn area(self: Area) -> f32 {
-        match area {
-            Circle { radius } => std::f32::consts::PI * r.powi(2),
-            Rectangle { width, height } => width * height,
+    pub fn area(self) -> f32 {
+        match self {
+            Shape::Circle { radius } => std::f32::consts::PI * radius.powi(2),
+            Shape::Rectangle { width, height } => width * height,
         }
     }
 }
