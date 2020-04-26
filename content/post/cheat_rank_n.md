@@ -4,7 +4,9 @@ date: 2020-03-06T23:37:54-05:00
 draft: true
 ---
 
-I'll begin by describing a recent problem I had when trying to abstract a bit of code. I had an enum that described a set of possible branches, for each branch there was an associated type to run through a serialize function.
+I ran into this a little while ago and thought it would be helpful to share a possible solution.
+
+Imagine you have an enum that describes a set of possible branches, for each branch there is a type associated with it that you want to run through a function, for this example-- serialize.
 
 ```rust
 enum Var {
@@ -31,9 +33,31 @@ where
 
 ```
 
-Life was good. Then I realized that I actually needed to format these types in two different ways, one with `to_writer` and the other with `to_writer_pretty`. I could make a `write` and `write_pretty` function, but that felt dirty. The only thing that would be different in each implementation is which function from `serde_json` it called.
+Life is good. Then you realize that you actually needed to format these types in two different ways, one with `to_writer` and the other with `to_writer_pretty`. You could make a `write` and `write_pretty` function, but that feels dirty. The only thing that would be different in each implementation is the function from `serde_json`. Naively, it would look something like this:
 
-No problem, I thought, I'll parameterize the formatting function and pass it as a closure.
+```rust
+fn write_pretty<W>(var: Var, mut writer: W) -> serde_json::Result<()>
+where
+    W: Write,
+{
+    match var {
+        Var::One => serde_json::to_writer(&mut writer, &Foo),
+        Var::Two => serde_json::to_writer(&mut writer, &Bar),
+    }
+}
+
+fn write<W>(var: Var, mut writer: W) -> serde_json::Result<()>
+where
+    W: Write,
+{
+    match var {
+        Var::One => serde_json::to_writer_pretty(&mut writer, &Foo),
+        Var::Two => serde_json::to_writer_pretty(&mut writer, &Bar),
+    }
+}
+```
+
+No problem, you think, you'll parameterize the formatting function and pass it as a closure.
 
 ```rust
 fn write<W, T, F>(var: Var, mut writer: W, f: F) -> serde_json::Result<()>
@@ -49,7 +73,7 @@ where
 }
 ```
 
-But this was folly, I'm declaring `write` to be valid for any `T`, then selecting some concrete `T` in the implementation. Indeed, this will generate an error.
+But this is folly, `write` is declared to be valid for any `T`, but it's passed a concrete `T` in the implementation (either `Foo` or `Bar`). Indeed, this will generate an error.
 
 ```bash
 error[E0308]: mismatched types
@@ -81,13 +105,15 @@ error[E0308]: mismatched types
    = note: for more information, visit https://doc.rust-lang.org/book/ch10-02-traits.html#traits-as-parameters
 ```
 
-This is where higher ranks could come in. If I could declare `F: for<T> Fn(&mut W, &T) -> serde_json::Result<()>`. Basically, declaring that `T` is parameterized over the function `F` and not over `write`, then this would be valid. But such things are not allowed in Rust today.
+This is where higher ranked types could come in. If you could declare `F: for<T> Fn(&mut W, &T) -> serde_json::Result<()>`. Basically, declaring that `T` is parameterized over the function `F` and not over `write`, then this would be valid. But such things are not allowed in Rust today.
 
 How then to solve this problem?
 
-## Type Erasure
+## Solutions
 
-I could 'erase' the type from the signature with a trait object,
+### Type Erasure
+
+You can usually 'erase' a type parameter with a trait object,
 
 ```rust
 fn write<W, T, F>(var: Var, mut writer: W, f: F) -> serde_json::Result<()>
@@ -107,9 +133,9 @@ The problem with this is that `Serialize` is not [object safe](https://doc.rust-
 
 There are crates like `erased_serde` that will allow one to make a `Box<dyn Serialize>`.
 
-## Another Enum
+### Another Enum
 
-I could make another enum, representing the different parameters that could be passed to the writer. This feels wrong, since it's what I'm trying to get away from in the first place.
+You can make another enum representing the different parameters that could be passed to the writer. I don't think you really gain a lot from this though and I'm not sure it's much better than just having the two explicit `write`/`write_pretty` variants.
 
 ```rust
 enum Foobar<'a> {
@@ -130,7 +156,7 @@ where
 }
 ```
 
-But then my closure has to handle the multiple variants also,
+But then the closure has to handle the multiple variants also,
 
 ```rust
 write(var, writer, |writer, foobar| {
@@ -139,13 +165,20 @@ write(var, writer, |writer, foobar| {
         Bar(bar) => serde_json::to_writer_pretty(writer, bar),
     }
 })
+// and later:
+write(var, writer, |writer, foobar| {
+    match foobar {
+        Foo(foo) => serde_json::to_writer(writer, foo),
+        Bar(bar) => serde_json::to_writer(writer, bar),
+    }
+})
 ```
 
-This isn't ideal either, I want to do the same thing for each type. Is there an easier way? I don't want to add a dependency, and I'm at the point now where this seems like an awful lot of work to try to abstract this bit of code. Maybe I should just copy-paste, make the modifications and be done with it?
+You want to do the same thing for each type. Is there an easier way? You don't want to add a dependency, and you're at the point now where this seems like an awful lot of work to try to abstract this bit of code. Maybe you should just copy-paste, make the modifications and be done with it?
 
-## Cheating Rank-2
+### Cheating Rank-2
 
-As usual in Rust-- traits to the rescue. It's possible to get around this by creating a trait with the behaviour I'm trying to abstract,
+As usual in Rust-- traits to the rescue. It's possible to get around this by creating a trait with the behaviour we're looking for
 
 ```rust
 trait Format {
@@ -179,7 +212,7 @@ impl Format for Pretty {
 }
 ```
 
-Now, I can make `write` parameterized by this trait,
+Now, you can make `write` parameterized by this trait,
 
 ```rust
 fn write<W, T, F>(var: Var, mut writer: W, format: F) -> serde_json::Result<()>
@@ -195,12 +228,12 @@ where
 }
 ```
 
-Elsewhere, I can simple call the `write` function with,
+Elsewhere, you can simply call the `write` function with,
 
 ```rust
 write(var, writer, Ugly)?;
 ```
 
-Because `<T>` is bounded over the `format` function and not the trait itself, it's effectively the same thing as a rank-2 type (`for<T> Fn(T)`). I think this shows something interesting about type systems with traits or typeclasses. It's sometimes valuable to create new types even if they hold no data, even if their only purpose is to abstract a bit of behaviour and allow you to parameterize it.
+Because `<T>` is bounded over the `format` function and not the trait itself, it's effectively the same thing as a rank-2 type (`for<T> Fn(T)`). I think this shows something interesting about type systems with traits or typeclasses; it's sometimes valuable to create new types even if they hold no data, even if their only purpose is to abstract a bit of behaviour and allow you to attach it to a type.
 
 If you don't require a trait definition to have object safety (`Format` won't be object safe), traits offer a convenient way to get around higher ranked types. Stick the additional type parameter in a trait method!
