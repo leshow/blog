@@ -36,7 +36,7 @@ where
 Life is good. Then you realize that you actually needed to format these types in two different ways, one with `to_writer` and the other with `to_writer_pretty`. You could make a `write` and `write_pretty` function, but that feels dirty. The only thing that would be different in each implementation is the function from `serde_json`. Naively, it would look something like this:
 
 ```rust
-fn write_pretty<W>(var: Var, mut writer: W) -> serde_json::Result<()>
+fn write<W>(var: Var, mut writer: W) -> serde_json::Result<()>
 where
     W: Write,
 {
@@ -46,7 +46,7 @@ where
     }
 }
 
-fn write<W>(var: Var, mut writer: W) -> serde_json::Result<()>
+fn write_pretty<W>(var: Var, mut writer: W) -> serde_json::Result<()>
 where
     W: Write,
 {
