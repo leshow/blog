@@ -1,7 +1,7 @@
 ---
 title: "Cheating Higher Ranks with Traits"
-date: 2020-03-06T23:37:54-05:00
-draft: true
+date: 2020-04-26T23:37:54-05:00
+draft: false
 ---
 
 I ran into this a little while ago and thought it would be helpful to share a possible solution.
