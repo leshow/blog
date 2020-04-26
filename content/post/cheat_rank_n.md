@@ -1,6 +1,6 @@
 ---
 title: "Cheating Higher Ranks with Traits"
-date: 2020-04-26T23:37:54-05:00
+date: 2020-04-26T18:37:54-05:00
 draft: false
 ---
 

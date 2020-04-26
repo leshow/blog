@@ -7,10 +7,21 @@
     <generator>Hugo -- gohugo.io</generator>
     <managingEditor>cameron.evan@gmail.com (Evan Cameron)</managingEditor>
     <webMaster>cameron.evan@gmail.com (Evan Cameron)</webMaster>
-    <lastBuildDate>Tue, 18 Feb 2020 10:23:50 -0500</lastBuildDate>
+    <lastBuildDate>Sun, 26 Apr 2020 18:37:54 -0500</lastBuildDate>
     
 	<atom:link href="https://leshow.github.io/post/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Cheating Higher Ranks with Traits</title>
+      <link>https://leshow.github.io/post/cheat_rank_n/</link>
+      <pubDate>Sun, 26 Apr 2020 18:37:54 -0500</pubDate>
+      <author>cameron.evan@gmail.com (Evan Cameron)</author>
+      <guid>https://leshow.github.io/post/cheat_rank_n/</guid>
+      <description>I ran into this a little while ago and thought it would be helpful to share a possible solution.
+Imagine you have an enum that describes a set of possible branches, for each branch there is a type associated with it that you want to run through a function, for this example&amp;ndash; serialize.
+enum Var{One,Two,}#[derive(Serialize)]struct Foo;#[derive(Serialize)]struct Bar;fn write&amp;lt;W&amp;gt;(var: Var,mutwriter: W)-&amp;gt; serde_json::Result&amp;lt;()&amp;gt;whereW: Write,{matchvar{Var::One=&amp;gt;serde_json::to_writer(&amp;amp;mutwriter,&amp;amp;Foo),Var::Two=&amp;gt;serde_json::to_writer(&amp;amp;mutwriter,&amp;amp;Bar),}}Life is good. Then you realize that you actually needed to format these types in two different ways, one with to_writer and the other with to_writer_pretty.</description>
+    </item>
     
     <item>
       <title>Rust for Java Devs</title>
