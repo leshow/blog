@@ -30,7 +30,6 @@ where
         Var::Two => serde_json::to_writer(&mut writer, &Bar),
     }
 }
-
 ```
 
 Life is good. Then you realize that you actually needed to format these types in two different ways, one with `to_writer` and the other with `to_writer_pretty`. You could make a `write` and `write_pretty` function, but that feels dirty. The only thing that would be different in each implementation is the function from `serde_json`. Naively, it would look something like this:

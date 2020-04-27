@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Posts on Esoterically Typed</title>
@@ -20,7 +20,7 @@
       <guid>https://leshow.github.io/post/cheat_rank_n/</guid>
       <description>I ran into this a little while ago and thought it would be helpful to share a possible solution.
 Imagine you have an enum that describes a set of possible branches, for each branch there is a type associated with it that you want to run through a function, for this example&amp;ndash; serialize.
-enum Var{One,Two,}#[derive(Serialize)]struct Foo;#[derive(Serialize)]struct Bar;fn write&amp;lt;W&amp;gt;(var: Var,mutwriter: W)-&amp;gt; serde_json::Result&amp;lt;()&amp;gt;whereW: Write,{matchvar{Var::One=&amp;gt;serde_json::to_writer(&amp;amp;mutwriter,&amp;amp;Foo),Var::Two=&amp;gt;serde_json::to_writer(&amp;amp;mutwriter,&amp;amp;Bar),}}Life is good. Then you realize that you actually needed to format these types in two different ways, one with to_writer and the other with to_writer_pretty.</description>
+enum Var{One,Two,}#[derive(Serialize)]struct Foo;#[derive(Serialize)]struct Bar;fn write&amp;lt;W&amp;gt;(var: Var,mutwriter: W)-&amp;gt; serde_json::Result&amp;lt;()&amp;gt;whereW: Write,{matchvar{Var::One=&amp;gt;serde_json::to_writer(&amp;amp;mutwriter,&amp;amp;Foo),Var::Two=&amp;gt;serde_json::to_writer(&amp;amp;mutwriter,&amp;amp;Bar),}} Life is good. Then you realize that you actually needed to format these types in two different ways, one with to_writer and the other with to_writer_pretty.</description>
     </item>
     
     <item>

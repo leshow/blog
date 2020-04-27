@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>Cheating Higher Ranks with Traits</title>
+  <meta property="og:title" content="Cheating Higher Ranks with Traits" />
+  <meta name="twitter:title" content="Cheating Higher Ranks with Traits" />
+  <meta name="description" content="I ran into this a little while ago and thought it would be helpful to share a possible solution.
+Imagine you have an enum that describes a set of possible branches, for each branch there is a type associated with it that you want to run through a function, for this example&ndash; serialize.
+enum Var{One,Two,}#[derive(Serialize)]struct Foo;#[derive(Serialize)]struct Bar;fn write&lt;W&gt;(var: Var,mutwriter: W)-&gt; serde_json::Result&lt;()&gt;whereW: Write,{matchvar{Var::One=&gt;serde_json::to_writer(&amp;mutwriter,&amp;Foo),Var::Two=&gt;serde_json::to_writer(&amp;mutwriter,&amp;Bar),}} Life is good. Then you realize that you actually needed to format these types in two different ways, one with to_writer and the other with to_writer_pretty.">
+  <meta property="og:description" content="I ran into this a little while ago and thought it would be helpful to share a possible solution.
+Imagine you have an enum that describes a set of possible branches, for each branch there is a type associated with it that you want to run through a function, for this example&ndash; serialize.
+enum Var{One,Two,}#[derive(Serialize)]struct Foo;#[derive(Serialize)]struct Bar;fn write&lt;W&gt;(var: Var,mutwriter: W)-&gt; serde_json::Result&lt;()&gt;whereW: Write,{matchvar{Var::One=&gt;serde_json::to_writer(&amp;mutwriter,&amp;Foo),Var::Two=&gt;serde_json::to_writer(&amp;mutwriter,&amp;Bar),}} Life is good. Then you realize that you actually needed to format these types in two different ways, one with to_writer and the other with to_writer_pretty.">
+  <meta name="twitter:description" content="I ran into this a little while ago and thought it would be helpful to share a possible solution.
+Imagine you have an enum that describes a set of possible branches, for each branch there is a type …">
+  <meta name="author" content="Evan Cameron"/>
+  <link href='https://leshow.github.io/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@evan_cam_" />
+  <meta name="twitter:creator" content="@evan_cam_" />
+  <meta property="og:url" content="https://leshow.github.io/post/cheat_rank_n/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Esoterically Typed" />
+
+  <meta name="generator" content="Hugo 0.57.2" />
+  <link rel="canonical" href="https://leshow.github.io/post/cheat_rank_n/" />
+  <link rel="alternate" href="https://leshow.github.io/index.xml" type="application/rss+xml" title="Esoterically Typed">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.css" integrity="sha384-wITovz90syo1dJWVh32uuETPVEtGigN07tkttEqPv+uR2SE/mbQcG7ATL28aI9H0" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://leshow.github.io/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://leshow.github.io/css/highlight.min.css" /><link rel="stylesheet" href="https://leshow.github.io/css/codeblock.css" />
+
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-145420817-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://leshow.github.io">Esoterically Typed</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Blog" href="/">Blog</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    <div class="avatar-container">
+      <div class="avatar-img-border">
+        
+          <a title="Esoterically Typed" href="https://leshow.github.io">
+            <img class="avatar-img" src="https://leshow.github.io/img/avatar-icon.png" alt="Esoterically Typed" />
+          </a>
+        
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+    
+  
+  
+  
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>Cheating Higher Ranks with Traits</h1>
+                
+                
+                  <span class="post-meta">
+  
+  
+  <i class="fa fa-calendar-o"></i>&nbsp;Posted on April 26, 2020
+  
+  
+  &nbsp;|&nbsp;
+  <i class="fa fa-clock-o"></i> 4 minutes (767 words)
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        
+
+<p>I ran into this a little while ago and thought it would be helpful to share a possible solution.</p>
+
+<p>Imagine you have an enum that describes a set of possible branches, for each branch there is a type associated with it that you want to run through a function, for this example&ndash; serialize.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">enum</span> <span class="nc">Var</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">One</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">Two</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="cp">#[derive(Serialize)]</span><span class="w">
+</span><span class="w"></span><span class="k">struct</span> <span class="nc">Foo</span><span class="p">;</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="cp">#[derive(Serialize)]</span><span class="w">
+</span><span class="w"></span><span class="k">struct</span> <span class="nc">Bar</span><span class="p">;</span><span class="w">
+</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">write</span><span class="o">&lt;</span><span class="n">W</span><span class="o">&gt;</span><span class="p">(</span><span class="n">var</span>: <span class="nc">Var</span><span class="p">,</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span>: <span class="nc">W</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">serde_json</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w">
+</span><span class="w"></span><span class="k">where</span><span class="w">
+</span><span class="w">    </span><span class="n">W</span>: <span class="nc">Write</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="n">var</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">Var</span>::<span class="n">One</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">serde_json</span>::<span class="n">to_writer</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Foo</span><span class="p">),</span><span class="w">
+</span><span class="w">        </span><span class="n">Var</span>::<span class="n">Two</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">serde_json</span>::<span class="n">to_writer</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Bar</span><span class="p">),</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>Life is good. Then you realize that you actually needed to format these types in two different ways, one with <code>to_writer</code> and the other with <code>to_writer_pretty</code>. You could make a <code>write</code> and <code>write_pretty</code> function, but that feels dirty. The only thing that would be different in each implementation is the function from <code>serde_json</code>. Naively, it would look something like this:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">write</span><span class="o">&lt;</span><span class="n">W</span><span class="o">&gt;</span><span class="p">(</span><span class="n">var</span>: <span class="nc">Var</span><span class="p">,</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span>: <span class="nc">W</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">serde_json</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w">
+</span><span class="w"></span><span class="k">where</span><span class="w">
+</span><span class="w">    </span><span class="n">W</span>: <span class="nc">Write</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="n">var</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">Var</span>::<span class="n">One</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">serde_json</span>::<span class="n">to_writer</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Foo</span><span class="p">),</span><span class="w">
+</span><span class="w">        </span><span class="n">Var</span>::<span class="n">Two</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">serde_json</span>::<span class="n">to_writer</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Bar</span><span class="p">),</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">write_pretty</span><span class="o">&lt;</span><span class="n">W</span><span class="o">&gt;</span><span class="p">(</span><span class="n">var</span>: <span class="nc">Var</span><span class="p">,</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span>: <span class="nc">W</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">serde_json</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w">
+</span><span class="w"></span><span class="k">where</span><span class="w">
+</span><span class="w">    </span><span class="n">W</span>: <span class="nc">Write</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="n">var</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">Var</span>::<span class="n">One</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">serde_json</span>::<span class="n">to_writer_pretty</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Foo</span><span class="p">),</span><span class="w">
+</span><span class="w">        </span><span class="n">Var</span>::<span class="n">Two</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">serde_json</span>::<span class="n">to_writer_pretty</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Bar</span><span class="p">),</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>No problem, you think, you&rsquo;ll parameterize the formatting function and pass it as a closure.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">write</span><span class="o">&lt;</span><span class="n">W</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">F</span><span class="o">&gt;</span><span class="p">(</span><span class="n">var</span>: <span class="nc">Var</span><span class="p">,</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span>: <span class="nc">W</span><span class="p">,</span><span class="w"> </span><span class="n">f</span>: <span class="nc">F</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">serde_json</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w">
+</span><span class="w"></span><span class="k">where</span><span class="w">
+</span><span class="w">    </span><span class="n">W</span>: <span class="nc">Write</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">T</span>: <span class="nc">Serialize</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">?</span><span class="nb">Sized</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">F</span>: <span class="nb">Fn</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">W</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">T</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">serde_json</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="n">var</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">Var</span>::<span class="n">One</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Foo</span><span class="p">),</span><span class="w">
+</span><span class="w">        </span><span class="n">Var</span>::<span class="n">Two</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Bar</span><span class="p">),</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>But this is folly, <code>write</code> is declared to be valid for any <code>T</code>, but it&rsquo;s passed a concrete <code>T</code> in the implementation (either <code>Foo</code> or <code>Bar</code>). Indeed, this will generate an error.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">error<span class="o">[</span>E0308<span class="o">]</span>: mismatched types
+  --&gt; src/lib.rs:23:36
+   <span class="p">|</span>
+<span class="m">16</span> <span class="p">|</span> fn write&lt;W, T, F&gt;<span class="o">(</span>var: Var, mut writer: W, f: F<span class="o">)</span> -&gt; serde_json::Result&lt;<span class="o">()</span>&gt;
+   <span class="p">|</span>             - this <span class="nb">type</span> parameter
+...
+<span class="m">23</span> <span class="p">|</span>         Var::One <span class="o">=</span>&gt; f<span class="o">(</span><span class="p">&amp;</span>mut writer, <span class="p">&amp;</span>Foo<span class="o">)</span>,
+   <span class="p">|</span>                                    ^^^^ expected <span class="nb">type</span> parameter <span class="sb">`</span>T<span class="sb">`</span>, found struct <span class="sb">`</span>Foo<span class="sb">`</span>
+   <span class="p">|</span>
+   <span class="o">=</span> note: expected reference <span class="sb">`</span><span class="p">&amp;</span>T<span class="sb">`</span>
+              found reference <span class="sb">`</span><span class="p">&amp;</span>Foo<span class="sb">`</span>
+   <span class="o">=</span> help: <span class="nb">type</span> parameters must be constrained to match other <span class="nv">types</span>
+   <span class="o">=</span> note: <span class="k">for</span> more information, visit https://doc.rust-lang.org/book/ch10-02-traits.html#traits-as-parameters
+
+error<span class="o">[</span>E0308<span class="o">]</span>: mismatched types
+  --&gt; src/lib.rs:24:36
+   <span class="p">|</span>
+<span class="m">16</span> <span class="p">|</span> fn write&lt;W, T, F&gt;<span class="o">(</span>var: Var, mut writer: W, f: F<span class="o">)</span> -&gt; serde_json::Result&lt;<span class="o">()</span>&gt;
+   <span class="p">|</span>             - this <span class="nb">type</span> parameter
+...
+<span class="m">24</span> <span class="p">|</span>         Var::Two <span class="o">=</span>&gt; f<span class="o">(</span><span class="p">&amp;</span>mut writer, <span class="p">&amp;</span>Bar<span class="o">)</span>,
+   <span class="p">|</span>                                    ^^^^ expected <span class="nb">type</span> parameter <span class="sb">`</span>T<span class="sb">`</span>, found struct <span class="sb">`</span>Bar<span class="sb">`</span>
+   <span class="p">|</span>
+   <span class="o">=</span> note: expected reference <span class="sb">`</span><span class="p">&amp;</span>T<span class="sb">`</span>
+              found reference <span class="sb">`</span><span class="p">&amp;</span>Bar<span class="sb">`</span>
+   <span class="o">=</span> help: <span class="nb">type</span> parameters must be constrained to match other <span class="nv">types</span>
+   <span class="o">=</span> note: <span class="k">for</span> more information, visit https://doc.rust-lang.org/book/ch10-02-traits.html#traits-as-parameters</code></pre></div>
+<p>This is where higher ranked types could come in. If you could declare <code>F: for&lt;T&gt; Fn(&amp;mut W, &amp;T) -&gt; serde_json::Result&lt;()&gt;</code>. Basically, declaring that <code>T</code> is parameterized over the function <code>F</code> and not over <code>write</code>, then this would be valid. But such things are not allowed in Rust today.</p>
+
+<p>How then to solve this problem?</p>
+
+<h2 id="solutions">Solutions</h2>
+
+<h3 id="type-erasure">Type Erasure</h3>
+
+<p>You can usually &lsquo;erase&rsquo; a type parameter with a trait object,</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">write</span><span class="o">&lt;</span><span class="n">W</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">F</span><span class="o">&gt;</span><span class="p">(</span><span class="n">var</span>: <span class="nc">Var</span><span class="p">,</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span>: <span class="nc">W</span><span class="p">,</span><span class="w"> </span><span class="n">f</span>: <span class="nc">F</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">serde_json</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w">
+</span><span class="w"></span><span class="k">where</span><span class="w">
+</span><span class="w">    </span><span class="n">W</span>: <span class="nc">Write</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">T</span>: <span class="nc">Serialize</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">?</span><span class="nb">Sized</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">F</span>: <span class="nb">Fn</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">W</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">dyn</span><span class="w"> </span><span class="n">Serialize</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">serde_json</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="n">var</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">Var</span>::<span class="n">One</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Foo</span><span class="p">),</span><span class="w">
+</span><span class="w">        </span><span class="n">Var</span>::<span class="n">Two</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Bar</span><span class="p">),</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>The problem with this is that <code>Serialize</code> is not <a href="https://doc.rust-lang.org/book/ch17-02-trait-objects.html#object-safety-is-required-for-trait-objects">object safe</a>. If a trait has generic methods like <code>Serialize</code> does, it can&rsquo;t be turned into a trait object. I encourage you to read the link, it&rsquo;s enlightening.</p>
+
+<p>There are crates like <code>erased_serde</code> that will allow one to make a <code>Box&lt;dyn Serialize&gt;</code>.</p>
+
+<h3 id="another-enum">Another Enum</h3>
+
+<p>You can make another enum representing the different parameters that could be passed to the writer. I don&rsquo;t think you really gain a lot from this though and I&rsquo;m not sure it&rsquo;s much better than just having the two explicit <code>write</code>/<code>write_pretty</code> variants.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">enum</span> <span class="nc">Foobar</span><span class="o">&lt;</span><span class="na">&#39;a</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">Foo</span><span class="p">(</span><span class="o">&amp;</span><span class="na">&#39;a</span><span class="w"> </span><span class="n">Foo</span><span class="p">),</span><span class="w">
+</span><span class="w">    </span><span class="n">Bar</span><span class="p">(</span><span class="o">&amp;</span><span class="na">&#39;a</span><span class="w"> </span><span class="n">Bar</span><span class="p">)</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">write</span><span class="o">&lt;</span><span class="n">W</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">F</span><span class="o">&gt;</span><span class="p">(</span><span class="n">var</span>: <span class="nc">Var</span><span class="p">,</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span>: <span class="nc">W</span><span class="p">,</span><span class="w"> </span><span class="n">f</span>: <span class="nc">F</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">serde_json</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w">
+</span><span class="w"></span><span class="k">where</span><span class="w">
+</span><span class="w">    </span><span class="n">W</span>: <span class="nc">Write</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">T</span>: <span class="nc">Serialize</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">?</span><span class="nb">Sized</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">F</span>: <span class="nb">Fn</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">W</span><span class="p">,</span><span class="w"> </span><span class="n">FooBar</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">serde_json</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="n">var</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">Var</span>::<span class="n">One</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="n">Foo</span><span class="p">(</span><span class="o">&amp;</span><span class="n">Foo</span><span class="p">)),</span><span class="w">
+</span><span class="w">        </span><span class="n">Var</span>::<span class="n">Two</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="n">Bar</span><span class="p">(</span><span class="o">&amp;</span><span class="n">Bar</span><span class="p">)),</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>But then the closure has to handle the multiple variants also,</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="n">write</span><span class="p">(</span><span class="n">var</span><span class="p">,</span><span class="w"> </span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="o">|</span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="n">foobar</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="n">foobar</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">Foo</span><span class="p">(</span><span class="n">foo</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">serde_json</span>::<span class="n">to_writer_pretty</span><span class="p">(</span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="n">foo</span><span class="p">),</span><span class="w">
+</span><span class="w">        </span><span class="n">Bar</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">serde_json</span>::<span class="n">to_writer_pretty</span><span class="p">(</span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="n">bar</span><span class="p">),</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">})</span><span class="w">
+</span><span class="w"></span><span class="c1">// and later:
+</span><span class="c1"></span><span class="n">write</span><span class="p">(</span><span class="n">var</span><span class="p">,</span><span class="w"> </span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="o">|</span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="n">foobar</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="n">foobar</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">Foo</span><span class="p">(</span><span class="n">foo</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">serde_json</span>::<span class="n">to_writer</span><span class="p">(</span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="n">foo</span><span class="p">),</span><span class="w">
+</span><span class="w">        </span><span class="n">Bar</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">serde_json</span>::<span class="n">to_writer</span><span class="p">(</span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="n">bar</span><span class="p">),</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">})</span><span class="w">
+</span></code></pre></div>
+<p>You want to do the same thing for each type. Is there an easier way? You don&rsquo;t want to add a dependency, and you&rsquo;re at the point now where this seems like an awful lot of work to try to abstract this bit of code. Maybe you should just copy-paste, make the modifications and be done with it?</p>
+
+<h3 id="cheating-rank-2">Cheating Rank-2</h3>
+
+<p>As usual in Rust&ndash; traits to the rescue. It&rsquo;s possible to get around this by creating a trait with the behaviour we&rsquo;re looking for</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">trait</span><span class="w"> </span><span class="n">Format</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">format</span><span class="o">&lt;</span><span class="n">W</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">writer</span>: <span class="nc">W</span><span class="p">,</span><span class="w"> </span><span class="n">val</span>: <span class="kp">&amp;</span><span class="nc">T</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">serde_json</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w">
+</span><span class="w">    </span><span class="k">where</span><span class="w">
+</span><span class="w">        </span><span class="n">W</span>: <span class="nc">Write</span><span class="p">,</span><span class="w">
+</span><span class="w">        </span><span class="n">T</span>: <span class="nc">Serialize</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">?</span><span class="nb">Sized</span><span class="p">;</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">struct</span> <span class="nc">Ugly</span><span class="p">;</span><span class="w">
+</span><span class="w"></span><span class="k">struct</span> <span class="nc">Pretty</span><span class="p">;</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">impl</span><span class="w"> </span><span class="n">Format</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Ugly</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">format</span><span class="o">&lt;</span><span class="n">W</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">writer</span>: <span class="nc">W</span><span class="p">,</span><span class="w"> </span><span class="n">val</span>: <span class="kp">&amp;</span><span class="nc">T</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">serde_json</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w">
+</span><span class="w">    </span><span class="k">where</span><span class="w">
+</span><span class="w">        </span><span class="n">W</span>: <span class="nc">Write</span><span class="p">,</span><span class="w">
+</span><span class="w">        </span><span class="n">T</span>: <span class="nc">Serialize</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">?</span><span class="nb">Sized</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">serde_json</span>::<span class="n">to_writer</span><span class="p">(</span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">)</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">impl</span><span class="w"> </span><span class="n">Format</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Pretty</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">format</span><span class="o">&lt;</span><span class="n">W</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">writer</span>: <span class="nc">W</span><span class="p">,</span><span class="w"> </span><span class="n">val</span>: <span class="kp">&amp;</span><span class="nc">T</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">serde_json</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w">
+</span><span class="w">    </span><span class="k">where</span><span class="w">
+</span><span class="w">        </span><span class="n">W</span>: <span class="nc">Write</span><span class="p">,</span><span class="w">
+</span><span class="w">        </span><span class="n">T</span>: <span class="nc">Serialize</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">?</span><span class="nb">Sized</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">serde_json</span>::<span class="n">to_writer_pretty</span><span class="p">(</span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">)</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>Now, you can make <code>write</code> parameterized by this trait,</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">write</span><span class="o">&lt;</span><span class="n">W</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">F</span><span class="o">&gt;</span><span class="p">(</span><span class="n">var</span>: <span class="nc">Var</span><span class="p">,</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span>: <span class="nc">W</span><span class="p">,</span><span class="w"> </span><span class="n">format</span>: <span class="nc">F</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">serde_json</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w">
+</span><span class="w"></span><span class="k">where</span><span class="w">
+</span><span class="w">    </span><span class="n">W</span>: <span class="nc">Write</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">T</span>: <span class="nc">Serialize</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">?</span><span class="nb">Sized</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">F</span>: <span class="nc">Format</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="n">var</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">Var</span>::<span class="n">One</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">format</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Foo</span><span class="p">),</span><span class="w">
+</span><span class="w">        </span><span class="n">Var</span>::<span class="n">Two</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">format</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Bar</span><span class="p">),</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>Elsewhere, you can simply call the <code>write</code> function with,</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="n">write</span><span class="p">(</span><span class="n">var</span><span class="p">,</span><span class="w"> </span><span class="n">writer</span><span class="p">,</span><span class="w"> </span><span class="n">Ugly</span><span class="p">)</span><span class="o">?</span><span class="p">;</span><span class="w">
+</span></code></pre></div>
+<p>Because <code>&lt;T&gt;</code> is bounded over the <code>format</code> function and not the trait itself, it&rsquo;s effectively the same thing as a rank-2 type (<code>for&lt;T&gt; Fn(T)</code>). I think this shows something interesting about type systems with traits or typeclasses; it&rsquo;s sometimes valuable to create new types even if they hold no data, even if their only purpose is to abstract a bit of behaviour and allow you to attach it to a type.</p>
+
+<p>If you don&rsquo;t require a trait definition to have object safety (<code>Format</code> won&rsquo;t be object safe), traits offer a convenient way to get around higher ranked types. Stick the additional type parameter in a trait method!</p>
+
+
+        
+
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://leshow.github.io/post/rust_for_java_devs/" data-toggle="tooltip" data-placement="top" title="Rust for Java Devs">&larr; Previous Post</a>
+            </li>
+          
+          
+        </ul>
+      
+
+
+      
+        
+        
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="mailto:cameron.evan@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://github.com/leshow" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/evan_cam_" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://linkedin.com/in/evan-cameron" title="LinkedIn">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-linkedin fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              <a href="leshow.github.io">Evan Cameron</a>
+            
+          
+
+          &nbsp;&bull;&nbsp;
+          2020
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://leshow.github.io">Esoterically Typed</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.57.2</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.js" integrity="sha384-/y1Nn9+QQAipbNQWU65krzJralCnuOasHncUFXGkdwntGeSvQicrYkiUBwsgUqc1" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/contrib/auto-render.min.js" integrity="sha384-dq1/gEHSxPZQ7DdrM82ID4YVol9BYyU7GbWlIwnwyPzotpoc57wDw/guX8EaYGPx" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/main.js"></script>
+<script src="https://leshow.github.io/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> $(document).ready(function() {$("pre.chroma").css("padding","0");}); </script><script> renderMathInElement(document.body); </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+  </body>
+</html>
+

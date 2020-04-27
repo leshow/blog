@@ -184,6 +184,38 @@ if (!doNotTrack) {
           
           
             <article class="post-preview">
+              <a href="https://leshow.github.io/post/cheat_rank_n/">
+                <h2 class="post-title">Cheating Higher Ranks with Traits</h2>
+                
+                
+              </a>
+
+              <span class="post-meta">
+  
+  
+  <i class="fa fa-calendar-o"></i>&nbsp;Posted on April 26, 2020
+  
+  
+  &nbsp;|&nbsp;
+  <i class="fa fa-clock-o"></i> 4 minutes (767 words)
+  
+  
+</span>
+
+
+              <div class="post-entry">
+                
+                  I ran into this a little while ago and thought it would be helpful to share a possible solution.
+Imagine you have an enum that describes a set of possible branches, for each branch there is a type associated with it that you want to run through a function, for this example&ndash; serialize.
+enum Var{One,Two,}#[derive(Serialize)]struct Foo;#[derive(Serialize)]struct Bar;fn write&lt;W&gt;(var: Var,mutwriter: W)-&gt; serde_json::Result&lt;()&gt;whereW: Write,{matchvar{Var::One=&gt;serde_json::to_writer(&amp;mutwriter,&amp;Foo),Var::Two=&gt;serde_json::to_writer(&amp;mutwriter,&amp;Bar),}} Life is good. Then you realize that you actually needed to format these types in two different ways, one with to_writer and the other with to_writer_pretty.
+                  <a href="https://leshow.github.io/post/cheat_rank_n/" class="post-read-more">[Read More]</a>
+                
+              </div>
+
+              
+            </article>
+          
+            <article class="post-preview">
               <a href="https://leshow.github.io/post/rust_for_java_devs/">
                 <h2 class="post-title">Rust for Java Devs</h2>
                 
