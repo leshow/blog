@@ -214,10 +214,9 @@ impl Format for Pretty {
 Now, you can make `write` parameterized by this trait,
 
 ```rust
-fn write<W, T, F>(var: Var, mut writer: W, format: F) -> serde_json::Result<()>
+fn write<W, F>(var: Var, mut writer: W, format: F) -> serde_json::Result<()>
 where
     W: Write,
-    T: Serialize + ?Sized,
     F: Format,
 {
     match var {

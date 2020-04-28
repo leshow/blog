@@ -181,7 +181,7 @@ if (!doNotTrack) {
   
   
   &nbsp;|&nbsp;
-  <i class="fa fa-clock-o"></i> 4 minutes (767 words)
+  <i class="fa fa-clock-o"></i> 4 minutes (766 words)
   
   
 </span>
@@ -386,10 +386,9 @@ error<span class="o">[</span>E0308<span class="o">]</span>: mismatched types
 </span><span class="w"></span><span class="p">}</span><span class="w">
 </span></code></pre></div>
 <p>Now, you can make <code>write</code> parameterized by this trait,</p>
-<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">write</span><span class="o">&lt;</span><span class="n">W</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">F</span><span class="o">&gt;</span><span class="p">(</span><span class="n">var</span>: <span class="nc">Var</span><span class="p">,</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span>: <span class="nc">W</span><span class="p">,</span><span class="w"> </span><span class="n">format</span>: <span class="nc">F</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">serde_json</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">write</span><span class="o">&lt;</span><span class="n">W</span><span class="p">,</span><span class="w"> </span><span class="n">F</span><span class="o">&gt;</span><span class="p">(</span><span class="n">var</span>: <span class="nc">Var</span><span class="p">,</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">writer</span>: <span class="nc">W</span><span class="p">,</span><span class="w"> </span><span class="n">format</span>: <span class="nc">F</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">serde_json</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w">
 </span><span class="w"></span><span class="k">where</span><span class="w">
 </span><span class="w">    </span><span class="n">W</span>: <span class="nc">Write</span><span class="p">,</span><span class="w">
-</span><span class="w">    </span><span class="n">T</span>: <span class="nc">Serialize</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">?</span><span class="nb">Sized</span><span class="p">,</span><span class="w">
 </span><span class="w">    </span><span class="n">F</span>: <span class="nc">Format</span><span class="p">,</span><span class="w">
 </span><span class="w"></span><span class="p">{</span><span class="w">
 </span><span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="n">var</span><span class="w"> </span><span class="p">{</span><span class="w">
