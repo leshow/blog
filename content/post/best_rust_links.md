@@ -1,5 +1,5 @@
 ---
-title: "Best_rust_links"
+title: "After 5 years, my favorite Rust links"
 date: 2020-05-29T15:51:41-04:00
 draft: true
 ---
