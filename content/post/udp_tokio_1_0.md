@@ -8,9 +8,9 @@ I've been working in the Rust space for about a year now using tokio & async/awa
 
 With that out of the way, let's tuck in...
 
-## Types are no longer &mut self (bye bye split)
+## Types are no longer &mut self
 
-As a result of [#2779](https://github.com/tokio-rs/tokio/issues/2779) `UdpSocket` and `TcpStream` no longer require `&mut self` to `recv`/`send` (or `read`/`write` in `TcpStream`'s case). This is a great thing for writing code that needs to concurrently read and write on the same socket, as we can skip the whole `split` api and just use `Arc`.
+As a result of [#2779](https://github.com/tokio-rs/tokio/issues/2779) `UdpSocket` and `TcpStream` no longer require `&mut self` to `recv`/`send` (or `read`/`write` in `TcpStream`'s case). This is a great thing for writing code that needs to concurrently read and write on the same socket. If you want to read/write from the same task, you can just use a regular `&UdpSocket` reference, and if you want to read in one task and write in another, a simple `Arc<UdpSocket>` will do. `TcpStream` keeps the `split` method, but under the hood it's doing just what I mentioned.
 
 ### Before
 
@@ -70,7 +70,7 @@ async fn main() -> io::Result<()> {
 }
 ```
 
-Another great thing about `&self` methods is that we can `send`/`recv` from BOTH tasks, whereas before there was a dedicated "sending" and "receiving" half. You could also imagine a more complicated setup where we give a reference to more than two tasks.
+Another thing about `&self` methods is that we can `send`/`recv` from BOTH tasks, whereas before there was a dedicated "sending" and "receiving" half. You could also imagine a more complicated setup where we give a reference to more than two tasks.
 
 Note that in both before/after cases here, we could easily `tokio::spawn` in the loop and pass in a `clone`d `Sender` in order to run each message in it's own task (if we were doing something actually useful). That way we're not doing anything in our read loop but pulling data off the socket.
 
@@ -96,7 +96,7 @@ So now we have another way to write manual `Stream`/`Future` impls, which is a w
 
 If you're unfamiliar with this `poll_` / `async` dichotomy, count yourself as lucky. It's nice that most users will only ever write `async` methods and never manually implement a `Future` or `Stream`. But sometimes in library code you need to do these things, and so tokio provides the building blocks, as a low level library, for both an `async` and non-async (`Context` receiving-- `Poll` returning) method now for each read/write action.
 
-To make things more concrete, `UdpSocket` has the async method `recv` (lifetimes removed):
+To make things more concrete, `UdpSocket` has the async method `recv`:
 
 ```rust
 pub async fn recv(&self, buf: &mut [u8]) -> Result<usize>
@@ -140,3 +140,7 @@ You may have noticed the `poll_recv` method exposes a `ReadBuf` type, this is a 
 
 - `UdpSocket` and it's Tcp counterparts have gotten `async` readiness checking methods [#3138](https://github.com/tokio-rs/tokio/pull/3138).
 - Everything that uses `SocketAddr` now takes it by value, since the type is `Copy` we don't need the extra layer of indirection. Old tokio API's would often take `&SocketAddr`. async methods still use `<T: ToSocketAddrs>`.
+
+## Things I would like to see in the future
+
+The follow is just my personal opinion, but I'd like to see some way to bound on a type that can `send`/`recv` in the same way we can `<T: AsyncRead + AsyncWrite>`. I think this probably won't be added until we have a zero-cost way to make async methods in traits, although I'm not sure if the tokio team even desires that behaviour at all. Personally, I think it would make writing `Framed` impls much more generic and allow a function to take both a `UdpSocket` or `Arc<UdpSocket>` generically. I could see that being useful in a few spots.
