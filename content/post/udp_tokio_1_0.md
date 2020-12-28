@@ -26,7 +26,7 @@ async fn run() -> Result<()> {
 
     tokio::spawn(async move {
         while let Some((msg, addr)) = rx.recv().await {
-            let len = s.send_to(&msg, &addr).await.unwrap();
+            let len = udp_send.send_to(&msg, &addr).await.unwrap();
             println!("{:?} bytes sent", len);
         }
     });
