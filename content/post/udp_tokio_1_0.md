@@ -145,7 +145,7 @@ You should not try to _concurrently_ use either the `poll_recv` or `poll_send` m
 
 ## ReadBuf
 
-You may have noticed the `poll_recv` method takes a `ReadBuf` type and not a `&mut [u8]`, this is a new type that `AsyncRead` and `AsyncWrite` also use in order to read/write into possibly uninitialized memory [#2716](https://github.com/tokio-rs/tokio/issues/2716). `ReadBuf` is a low level type that uses `MaybeUninit<u8>` under the hood and tracks what parts of the buffer have been filled/initialized. Why would we want to do this? The main issue with stack buffers like `[u8; 1024]`, as I understand it, is that the buffer must always be zero-initialized. This is a potentially costly operation, on every read you have to allocate and zero out all of that memory. Because this is a divergence from the std types, there is a corresponding RFC to merge `ReadBuf` [into std](https://github.com/rust-lang/rust/issues/78485).
+You may have noticed the `poll_recv` method takes a `ReadBuf` type and not a `&mut [u8]`, this is a new type that `AsyncRead` and `AsyncWrite` also use in order to read/write into possibly uninitialized memory [#2716](https://github.com/tokio-rs/tokio/issues/2716). `ReadBuf` is a low level type that uses `MaybeUninit<u8>` under the hood and tracks what parts of the buffer have been filled/initialized. Why would we want to do this? The main issue with stack buffers like `[u8; 1024]`, as I understand it, is that the buffer must always be zero-initialized. This is a potentially costly operation, you have to allocate and zero out all of that memory. Because this is a divergence from the std types, there is a corresponding RFC to merge `ReadBuf` [into std](https://github.com/rust-lang/rust/issues/78485).
 
 ## Sundries
 
