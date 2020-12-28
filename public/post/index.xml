@@ -18,7 +18,7 @@
       <pubDate>Mon, 28 Dec 2020 10:19:23 -0500</pubDate>
       <author>cameron.evan@gmail.com (Evan Cameron)</author>
       <guid>https://leshow.github.io/post/udp_tokio_1_0/</guid>
-      <description>I&amp;rsquo;ve been working in the Rust space for about a year now using tokio &amp;amp; async/await in the DNS space. The result of this work is a sizeable from-scratch tokio server using 0.2 (that&amp;rsquo;s now in production&amp;ndash; yay! hopefully I can share more about this later). As a result, I&amp;rsquo;ve gotten to know the UDP API of tokio quite well, and have even got to submit a few PRs. Nothing groundbreaking mind you.</description>
+      <description>I&amp;rsquo;ve been working in the Rust space for about a year now using tokio &amp;amp; async/await with DNS. The result of this work is a sizeable from-scratch tokio server using 0.2 (that&amp;rsquo;s now in production&amp;ndash; yay! hopefully I can share more about this later). As a result, I&amp;rsquo;ve gotten to know the UDP API of tokio quite well, and have even got to submit a few PRs. Nothing groundbreaking mind you.</description>
     </item>
     
     <item>
