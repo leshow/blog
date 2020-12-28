@@ -176,7 +176,7 @@ if (!doNotTrack) {
   
   
   &nbsp;|&nbsp;
-  <i class="fa fa-clock-o"></i> 8 minutes (1562 words)
+  <i class="fa fa-clock-o"></i> 8 minutes (1559 words)
   
   
 </span>
@@ -312,7 +312,7 @@ if (!doNotTrack) {
 
 <h2 id="readbuf">ReadBuf</h2>
 
-<p>You may have noticed the <code>poll_recv</code> method takes a <code>ReadBuf</code> type and not a <code>&amp;mut [u8]</code>, this is a new type that <code>AsyncRead</code> and <code>AsyncWrite</code> also use in order to read/write into possibly uninitialized memory <a href="https://github.com/tokio-rs/tokio/issues/2716">#2716</a>. <code>ReadBuf</code> is a low level type that uses <code>MaybeUninit&lt;u8&gt;</code> under the hood and tracks what parts of the buffer have been filled/initialized. Why would we want to do this? The main issue with stack buffers like <code>[u8; 1024]</code>, as I understand it, is that the buffer must always be zero-initialized. This is a potentially costly operation, on every read you have to allocate and zero out all of that memory. Because this is a divergence from the std types, there is a corresponding RFC to merge <code>ReadBuf</code> <a href="https://github.com/rust-lang/rust/issues/78485">into std</a>.</p>
+<p>You may have noticed the <code>poll_recv</code> method takes a <code>ReadBuf</code> type and not a <code>&amp;mut [u8]</code>, this is a new type that <code>AsyncRead</code> and <code>AsyncWrite</code> also use in order to read/write into possibly uninitialized memory <a href="https://github.com/tokio-rs/tokio/issues/2716">#2716</a>. <code>ReadBuf</code> is a low level type that uses <code>MaybeUninit&lt;u8&gt;</code> under the hood and tracks what parts of the buffer have been filled/initialized. Why would we want to do this? The main issue with stack buffers like <code>[u8; 1024]</code>, as I understand it, is that the buffer must always be zero-initialized. This is a potentially costly operation, you have to allocate and zero out all of that memory. Because this is a divergence from the std types, there is a corresponding RFC to merge <code>ReadBuf</code> <a href="https://github.com/rust-lang/rust/issues/78485">into std</a>.</p>
 
 <h2 id="sundries">Sundries</h2>
 
