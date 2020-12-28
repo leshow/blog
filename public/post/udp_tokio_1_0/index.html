@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>A look at tokio 1.0 API Changes</title>
+  <meta property="og:title" content="A look at tokio 1.0 API Changes" />
+  <meta name="twitter:title" content="A look at tokio 1.0 API Changes" />
+  <meta name="description" content="I&rsquo;ve been working in the Rust space for about a year now using tokio &amp; async/await in the DNS space. The result of this work is a sizeable from-scratch tokio server using 0.2 (that&rsquo;s now in production&ndash; yay! hopefully I can share more about this later). As a result, I&rsquo;ve gotten to know the UDP API of tokio quite well, and have even got to submit a few PRs. Nothing groundbreaking mind you.">
+  <meta property="og:description" content="I&rsquo;ve been working in the Rust space for about a year now using tokio &amp; async/await in the DNS space. The result of this work is a sizeable from-scratch tokio server using 0.2 (that&rsquo;s now in production&ndash; yay! hopefully I can share more about this later). As a result, I&rsquo;ve gotten to know the UDP API of tokio quite well, and have even got to submit a few PRs. Nothing groundbreaking mind you.">
+  <meta name="twitter:description" content="I&rsquo;ve been working in the Rust space for about a year now using tokio &amp; async/await in the DNS space. The result of this work is a sizeable from-scratch tokio server using 0.2 (that&rsquo;s …">
+  <meta name="author" content="Evan Cameron"/>
+  <link href='https://leshow.github.io/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@evan_cam_" />
+  <meta name="twitter:creator" content="@evan_cam_" />
+  <meta property="og:url" content="https://leshow.github.io/post/udp_tokio_1_0/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Esoterically Typed" />
+
+  <meta name="generator" content="Hugo 0.57.2" />
+  <link rel="canonical" href="https://leshow.github.io/post/udp_tokio_1_0/" />
+  <link rel="alternate" href="https://leshow.github.io/index.xml" type="application/rss+xml" title="Esoterically Typed">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.css" integrity="sha384-wITovz90syo1dJWVh32uuETPVEtGigN07tkttEqPv+uR2SE/mbQcG7ATL28aI9H0" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://leshow.github.io/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://leshow.github.io/css/highlight.min.css" /><link rel="stylesheet" href="https://leshow.github.io/css/codeblock.css" />
+
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-145420817-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://leshow.github.io">Esoterically Typed</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Blog" href="/">Blog</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    <div class="avatar-container">
+      <div class="avatar-img-border">
+        
+          <a title="Esoterically Typed" href="https://leshow.github.io">
+            <img class="avatar-img" src="https://leshow.github.io/img/avatar-icon.png" alt="Esoterically Typed" />
+          </a>
+        
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+    
+  
+  
+  
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>A look at tokio 1.0 API Changes</h1>
+                
+                
+                  <span class="post-meta">
+  
+  
+  <i class="fa fa-calendar-o"></i>&nbsp;Posted on December 28, 2020
+  
+  
+  &nbsp;|&nbsp;
+  <i class="fa fa-clock-o"></i> 8 minutes (1564 words)
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        
+
+<p>I&rsquo;ve been working in the Rust space for about a year now using tokio &amp; async/await in the DNS space. The result of this work is a sizeable from-scratch tokio server using 0.2 (that&rsquo;s now in production&ndash; yay! hopefully I can share more about this later). As a result, I&rsquo;ve gotten to know the UDP API of tokio quite well, and have even got to submit a few PRs. Nothing groundbreaking mind you. But I&rsquo;d like to highlight some interesting changes I&rsquo;ve observed in tokio&rsquo;s API between <code>0.2</code> and <code>0.3</code>/<code>1.0</code>. These are all externally facing changes, and will tend to focus on UDP since that&rsquo;s what I know. I wouldn&rsquo;t consider myself knowledgeable enough about the internals of what prompted these changes to dig into what&rsquo;s going on under the hood, but I&rsquo;ll do my best to point to relevant issues or PRs so you can read more. And if this prompts some discussion which further elucidates some of the details; all the better.</p>
+
+<p>With that out of the way, let&rsquo;s tuck in&hellip;</p>
+
+<h2 id="types-are-no-longer-mut-self">Types are no longer &amp;mut self</h2>
+
+<p>As a result of <a href="https://github.com/tokio-rs/tokio/issues/2779">#2779</a> <code>net</code> types in tokio (<code>UdpSocket</code>, <code>TcpStream</code>, etc) no longer require <code>&amp;mut self</code> to <code>recv</code>/<code>send</code> (or <code>read</code>/<code>write</code> in <code>TcpStream</code>&rsquo;s case). This is a great thing for writing code that needs to concurrently read and write on the same socket. If you want to read/write from the same task, you can just use a regular <code>&amp;UdpSocket</code> reference, and if you want to read in one task and write in another, a simple <code>Arc&lt;UdpSocket&gt;</code> will do. <code>TcpStream</code> keeps the <code>split</code> method, but under the hood it&rsquo;s doing just what I mentioned.</p>
+
+<h3 id="before">Before</h3>
+
+<p>Now, for concurrent send/recv, I&rsquo;m not sure how others used to handle this case, but I always would set up a channel and create a dedicated &ldquo;sender&rdquo; task, then I&rsquo;d <code>recv</code>, do some work, and send the response back over the channel. Putting that all together with <code>split</code> looked more or less like this:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="n">async</span><span class="w"> </span><span class="k">fn</span> <span class="nf">run</span><span class="p">()</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">udp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UdpSocket</span>::<span class="n">bind</span><span class="p">(</span><span class="s">&#34;0.0.0.0:8080&#34;</span><span class="p">).</span><span class="n">await</span><span class="o">?</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="c1">// call split so we can give ownership of &#39;half&#39; to one task
+</span><span class="c1"></span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="p">(</span><span class="k">mut</span><span class="w"> </span><span class="n">udp_recv</span><span class="p">,</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">udp_send</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">udp</span><span class="p">.</span><span class="n">split</span><span class="p">();</span><span class="w">
+</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="p">(</span><span class="k">mut</span><span class="w"> </span><span class="n">tx</span><span class="p">,</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">rx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mpsc</span>::<span class="n">channel</span>::<span class="o">&lt;</span><span class="p">(</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">u8</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">SocketAddr</span><span class="p">)</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1_000</span><span class="p">);</span><span class="w">
+</span><span class="w">
+</span><span class="w">    </span><span class="n">tokio</span>::<span class="n">spawn</span><span class="p">(</span><span class="n">async</span><span class="w"> </span><span class="k">move</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="k">while</span><span class="w"> </span><span class="kd">let</span><span class="w"> </span><span class="nb">Some</span><span class="p">((</span><span class="n">msg</span><span class="p">,</span><span class="w"> </span><span class="n">addr</span><span class="p">))</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rx</span><span class="p">.</span><span class="n">recv</span><span class="p">().</span><span class="n">await</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">send_to</span><span class="p">(</span><span class="o">&amp;</span><span class="n">msg</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">addr</span><span class="p">).</span><span class="n">await</span><span class="p">.</span><span class="n">unwrap</span><span class="p">();</span><span class="w">
+</span><span class="w">            </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{:?} bytes sent&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">len</span><span class="p">);</span><span class="w">
+</span><span class="w">        </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="p">});</span><span class="w">
+</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">buf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="mi">1024</span><span class="p">];</span><span class="w">
+</span><span class="w">    </span><span class="k">loop</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="p">(</span><span class="n">len</span><span class="p">,</span><span class="w"> </span><span class="n">addr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">udp_recv</span><span class="p">.</span><span class="n">recv_from</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">buf</span><span class="p">).</span><span class="n">await</span><span class="o">?</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{:?} bytes received from {:?}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">len</span><span class="p">,</span><span class="w"> </span><span class="n">addr</span><span class="p">);</span><span class="w">
+</span><span class="w">        </span><span class="n">tx</span><span class="p">.</span><span class="n">send</span><span class="p">((</span><span class="n">buf</span><span class="p">[..</span><span class="n">len</span><span class="p">].</span><span class="n">to_vec</span><span class="p">(),</span><span class="w"> </span><span class="n">addr</span><span class="p">)).</span><span class="n">await</span><span class="p">.</span><span class="n">unwrap</span><span class="p">();</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>You can see here <code>split</code> gets around the <code>&amp;mut self</code> property of <code>recv</code> and <code>send</code>. The split api let&rsquo;s us get each &ldquo;half&rdquo; that can be moved into it&rsquo;s own fully owned task, we can then concurrently <code>send</code> and <code>recv</code> afterwards.</p>
+
+<h3 id="after">After</h3>
+
+<p>Now, with the above changes in 1.0, <code>split</code> is gone for <code>UdpSocket</code> and we can just use regular types from the std lib to accomplish the same task. If you&rsquo;re using <code>TcpStream</code> or <code>UnixStream</code>, you can choose to use <code>split</code>/<code>into_split</code> or <code>&amp;</code>/<code>Arc</code>. For these types, I&rsquo;d recommend split if you only need two &ldquo;halves&rdquo; and use the std types if you want to use more than two.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="n">async</span><span class="w"> </span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span>-&gt; <span class="nc">io</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">sock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UdpSocket</span>::<span class="n">bind</span><span class="p">(</span><span class="s">&#34;0.0.0.0:8080&#34;</span><span class="p">).</span><span class="n">await</span><span class="o">?</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="c1">// Arc instead of split, make two refs
+</span><span class="c1"></span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Arc</span>::<span class="n">new</span><span class="p">(</span><span class="n">sock</span><span class="p">);</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">clone</span><span class="p">();</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="p">(</span><span class="n">tx</span><span class="p">,</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">rx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mpsc</span>::<span class="n">channel</span>::<span class="o">&lt;</span><span class="p">(</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">u8</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">SocketAddr</span><span class="p">)</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1_000</span><span class="p">);</span><span class="w">
+</span><span class="w">
+</span><span class="w">    </span><span class="n">tokio</span>::<span class="n">spawn</span><span class="p">(</span><span class="n">async</span><span class="w"> </span><span class="k">move</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="k">while</span><span class="w"> </span><span class="kd">let</span><span class="w"> </span><span class="nb">Some</span><span class="p">((</span><span class="n">bytes</span><span class="p">,</span><span class="w"> </span><span class="n">addr</span><span class="p">))</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rx</span><span class="p">.</span><span class="n">recv</span><span class="p">().</span><span class="n">await</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">send_to</span><span class="p">(</span><span class="o">&amp;</span><span class="n">bytes</span><span class="p">,</span><span class="w"> </span><span class="n">addr</span><span class="p">).</span><span class="n">await</span><span class="p">.</span><span class="n">unwrap</span><span class="p">();</span><span class="w">
+</span><span class="w">            </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{:?} bytes sent&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">len</span><span class="p">);</span><span class="w">
+</span><span class="w">        </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="p">});</span><span class="w">
+</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">buf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="mi">1024</span><span class="p">];</span><span class="w">
+</span><span class="w">    </span><span class="k">loop</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="p">(</span><span class="n">len</span><span class="p">,</span><span class="w"> </span><span class="n">addr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">recv_from</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">buf</span><span class="p">).</span><span class="n">await</span><span class="o">?</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{:?} bytes received from {:?}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">len</span><span class="p">,</span><span class="w"> </span><span class="n">addr</span><span class="p">);</span><span class="w">
+</span><span class="w">        </span><span class="n">tx</span><span class="p">.</span><span class="n">send</span><span class="p">((</span><span class="n">buf</span><span class="p">[..</span><span class="n">len</span><span class="p">].</span><span class="n">to_vec</span><span class="p">(),</span><span class="w"> </span><span class="n">addr</span><span class="p">)).</span><span class="n">await</span><span class="p">.</span><span class="n">unwrap</span><span class="p">();</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>Another thing about <code>&amp;self</code> methods is that we can <code>send</code>/<code>recv</code> from BOTH tasks, whereas before there was a dedicated &ldquo;sending&rdquo; and &ldquo;receiving&rdquo; half. You could also imagine a more complicated setup where we give a reference to more than two tasks.</p>
+
+<p>Note that in both before/after cases here, we could easily <code>tokio::spawn</code> in the loop and pass in a <code>clone</code>d <code>Sender</code> in order to run each message in it&rsquo;s own task (if we were doing something actually useful). That way we&rsquo;re not doing anything in our read loop but pulling data off the socket.</p>
+
+<h2 id="poll-api">Poll API</h2>
+
+<p>If you want to use a <code>Stream</code> implementation for <code>UdpSocket</code>, your previous option was pretty much just <code>UdpFramed</code> in <code>tokio-util</code>. If you haven&rsquo;t used any of the util crates, you write a &ldquo;decoder&rdquo; which understands how to transform a buffer into a &ldquo;frame&rdquo; of your chosen type.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">trait</span><span class="w"> </span><span class="n">Decoder</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">type</span> <span class="nc">Item</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="k">type</span> <span class="nc">Error</span>: <span class="nb">From</span><span class="o">&lt;</span><span class="n">Error</span><span class="o">&gt;</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">decode</span><span class="p">(</span><span class="w">
+</span><span class="w">        </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">,</span><span class="w">
+</span><span class="w">        </span><span class="n">src</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="n">BytesMut</span><span class="w">
+</span><span class="w">    </span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="nb">Option</span><span class="o">&lt;</span><span class="n">Self</span>::<span class="n">Item</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">Self</span>::<span class="n">Error</span><span class="o">&gt;</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="p">...</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>This API has remained much the same in the new <code>tokio-util</code>, although the internals of how it pulls down a frame has changed. Under the hood, <code>Decoder</code> used a set of methods prefixed with <code>poll_</code>, these are methods that are a mirror of their async counterparts, but that return <code>Poll</code>. In other words, <code>UdpSocket</code> now supports a <code>Poll</code> API, it has public methods for <code>recv</code>/<code>recv_from</code>/<code>send</code>/<code>send_to</code> that don&rsquo;t use <code>async</code> and instead return the <code>Poll</code> type.</p>
+
+<p>So now we have another way to write manual <code>Stream</code>/<code>Future</code> impls, which is a welcome addition if you don&rsquo;t want to be tied to other parts of the tokio ecosystem or you just need the extra flexibility.</p>
+
+<p>If you&rsquo;re unfamiliar with this <code>poll_</code> / <code>async</code> dichotomy, count yourself as lucky. It&rsquo;s nice that most users will only ever write <code>async</code> methods and never manually implement a <code>Future</code> or <code>Stream</code>. But sometimes in library code you need to do these things, and so tokio provides the building blocks, as a low level library, for both an <code>async</code> and non-async (<code>Context</code> receiving&ndash; <code>Poll</code> returning) method now for each read/write action.</p>
+
+<p>To make things more concrete, <code>UdpSocket</code> has the async method <code>recv</code>:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="n">async</span><span class="w"> </span><span class="k">fn</span> <span class="nf">recv</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="p">[</span><span class="kt">u8</span><span class="p">])</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="kt">usize</span><span class="o">&gt;</span><span class="w">
+</span></code></pre></div>
+<p>If you&rsquo;re in async/await land this is great, use these methods. It&rsquo;s just when you&rsquo;re stuck writing <code>Stream</code> or <code>Future</code> impls that these methods don&rsquo;t do you any good. Look at the type signature of a <code>Future</code>:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">trait</span><span class="w"> </span><span class="n">Future</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">type</span> <span class="nc">Output</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">poll</span><span class="p">(</span><span class="bp">self</span>: <span class="nc">Pin</span><span class="o">&lt;&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">Self</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">cx</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="n">Context</span><span class="o">&lt;</span><span class="na">&#39;_</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">Poll</span><span class="o">&lt;</span><span class="n">Self</span>::<span class="n">Output</span><span class="o">&gt;</span><span class="p">;</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p><code>Stream</code> has a similar style to this. If you&rsquo;ve got async methods, calling them from <code>poll</code> can be difficult and often produce bugs because you can easily end up creating a new future <em>on every invocation of <code>poll</code></em> rather than holding on to a single future and driving it to completion.</p>
+
+<p>In short, we need a <code>Poll</code> returning method that takes <code>Context</code>. This is where the <code>poll_*</code> variants come in:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">poll_recv</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">cx</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="n">Context</span><span class="o">&lt;</span><span class="na">&#39;_</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="n">ReadBuf</span><span class="o">&lt;</span><span class="na">&#39;_</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">Poll</span><span class="o">&lt;</span><span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;&gt;</span><span class="w">
+</span></code></pre></div>
+<p>With these methods exposed, you&rsquo;re free to write your own <code>Stream</code>/<code>Future</code> impls. This is a bit off-topic, but you can quickly turn a <code>poll_*</code> method into an async fn with <a href="https://docs.rs/futures/0.3.8/futures/future/fn.poll_fn.html"><code>poll_fn</code></a>; and indeed, the async methods used to be written this way.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="n">poll_fn</span><span class="p">(</span><span class="o">|</span><span class="n">cx</span><span class="o">|</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">poll_recv_from</span><span class="p">(</span><span class="n">cx</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">)).</span><span class="n">await</span><span class="w">
+</span></code></pre></div>
+<p>However, there is an edge-case to be aware of here, and it&rsquo;s outlined in the docs on the <code>poll_*</code> methods:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="sd">/// Note that on multiple calls to a `poll_*` method in the send direction, only the
+</span><span class="sd">/// `Waker` from the `Context` passed to the most recent call will be scheduled to
+</span><span class="sd">/// receive a wakeup.
+</span></code></pre></div>
+<p>and on recv:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="sd">/// Note that on multiple calls to a `poll_*` method in the recv direction, only the
+</span><span class="sd">/// `Waker` from the `Context` passed to the most recent call will be scheduled to
+</span><span class="sd">/// receive a wakeup.
+</span></code></pre></div>
+<p>You should not try to <em>concurrently</em> use either the <code>poll_recv</code> or <code>poll_send</code> methods <em>in the same direction</em>, and if you do not observe this advice&ndash; expect weirdness.</p>
+
+<h2 id="readbuf">ReadBuf</h2>
+
+<p>You may have noticed the <code>poll_recv</code> method takes a <code>ReadBuf</code> type and not a <code>&amp;mut [u8]</code>, this is a new type that <code>AsyncRead</code> and <code>AsyncWrite</code> also use in order to read/write into possibly uninitialized memory <a href="https://github.com/tokio-rs/tokio/issues/2716">#2716</a>. <code>ReadBuf</code> is a low level type that uses <code>MaybeUninit&lt;u8&gt;</code> under the hood and tracks what parts of the buffer have been filled/initialized. Why would we want to do this? The main issue with stack buffers like <code>[u8; 1024]</code>, as I understand it, is that the buffer must always be zero-initialized. This is a potentially costly operation, on every read you have to allocate and zero out all of that memory. Because this is a divergence from the std types, there is a corresponding RFC to merge <code>ReadBuf</code> <a href="https://github.com/rust-lang/rust/issues/78485">into std</a>.</p>
+
+<h2 id="sundries">Sundries</h2>
+
+<ul>
+<li><code>UdpSocket</code> and it&rsquo;s Tcp counterparts have gotten <code>async</code> readiness checking methods <a href="https://github.com/tokio-rs/tokio/pull/3138">#3138</a>.</li>
+<li>Everything that uses <code>SocketAddr</code> now takes it by value, since the type is <code>Copy</code> we don&rsquo;t need the extra layer of indirection. Old tokio API&rsquo;s would often take <code>&amp;SocketAddr</code>. async methods are still generic <code>&lt;T: ToSocketAddrs&gt;</code>.</li>
+<li>Is there more missing here? Send me a message and let me know!</li>
+</ul>
+
+<h2 id="something-i-d-like-to-see-in-the-future">Something I&rsquo;d like to see in the future</h2>
+
+<p>I&rsquo;d like to see some way to bound on a type that can <code>send</code>/<code>recv</code> in the same way we can <code>&lt;T: AsyncRead + AsyncWrite&gt;</code>. I think this probably won&rsquo;t be added until there is a zero-cost way to make async methods in traits, and even then, I&rsquo;m not sure if the tokio team even desires that behaviour. Personally, I think it would make writing <code>Framed</code> impls much more generic and allow a function to take both a <code>UdpSocket</code> or <code>Arc&lt;UdpSocket&gt;</code> generically. This would help when you want to make a <code>Decoder</code> for a socket that is shared among tasks concurrently.</p>
+
+<h2 id="wrapping-up">Wrapping up</h2>
+
+<p>I was an early user of tokio and the futures ecosystem, I remember the slog of futures 0.1 and tokio 0.1, seeing that evolve into the more mature <code>std::future</code> and tokio 0.2 and now 1.0 has been fascinating. It&rsquo;s hard to believe it&rsquo;s been something like 4 years since this all started. I&rsquo;m happy that most will not have to experience a manual <code>Future</code> impl or working with nested combinators. I&rsquo;m even happier, as a user of tokio, that they&rsquo;ve decided to commit to this API for a good length of time. That keeps some of the burden off of application developers having to &ldquo;keep up&rdquo; with everything that&rsquo;s going on in the ecosystem. Not everyone has the desire to follow all of the PRs or subreddits &amp; message boards. I&rsquo;m not speaking for myself, personally I can&rsquo;t get enough, but I understand that&rsquo;s not how others want to spend their free time.</p>
+
+<p>Anyway, congrats tokio team, you&rsquo;ve done a wonderful job!</p>
+
+
+        
+
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://leshow.github.io/post/cheat_rank_n/" data-toggle="tooltip" data-placement="top" title="Cheating Higher Ranks with Traits">&larr; Previous Post</a>
+            </li>
+          
+          
+        </ul>
+      
+
+
+      
+        
+        
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="mailto:cameron.evan@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://github.com/leshow" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/evan_cam_" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://linkedin.com/in/evan-cameron" title="LinkedIn">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-linkedin fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              <a href="leshow.github.io">Evan Cameron</a>
+            
+          
+
+          &nbsp;&bull;&nbsp;
+          2020
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://leshow.github.io">Esoterically Typed</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.57.2</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.js" integrity="sha384-/y1Nn9+QQAipbNQWU65krzJralCnuOasHncUFXGkdwntGeSvQicrYkiUBwsgUqc1" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/contrib/auto-render.min.js" integrity="sha384-dq1/gEHSxPZQ7DdrM82ID4YVol9BYyU7GbWlIwnwyPzotpoc57wDw/guX8EaYGPx" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/main.js"></script>
+<script src="https://leshow.github.io/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> $(document).ready(function() {$("pre.chroma").css("padding","0");}); </script><script> renderMathInElement(document.body); </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+  </body>
+</html>
+
