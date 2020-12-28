@@ -1,10 +1,10 @@
 ---
-title: "An outsiders view: tokio 1.0 API Changes"
-date: 2020-12-24T15:49:23-05:00
-draft: true
+title: "A look at tokio 1.0 API Changes"
+date: 2020-12-28T10:19:23-05:00
+draft: false
 ---
 
-I've been working in the Rust space for about a year now using tokio & async/await in the DNS space. The result of this work is a sizeable from-scratch tokio server using 0.2 (that's now in production-- yay! hopefully I can share more about this later). As a result, I've gotten to know the UDP API of tokio quite well, and have even got to submit a few patches. Nothing groundbreaking mind you. But I'd like to highlight some interesting changes I've observed in tokio's API between `0.2` and `0.3`/`1.0`. These are all externally facing changes, and will tend to focus on UDP since that's what I know. I wouldn't consider myself knowledgeable enough about the internals of what prompted these changes to dig into what's going on under the hood, but I'll do my best to point to relevant issues or PRs so you can read more. And if this prompts some discussion which further elucidates some of the details; all the better.
+I've been working in the Rust space for about a year now using tokio & async/await in the DNS space. The result of this work is a sizeable from-scratch tokio server using 0.2 (that's now in production-- yay! hopefully I can share more about this later). As a result, I've gotten to know the UDP API of tokio quite well, and have even got to submit a few PRs. Nothing groundbreaking mind you. But I'd like to highlight some interesting changes I've observed in tokio's API between `0.2` and `0.3`/`1.0`. These are all externally facing changes, and will tend to focus on UDP since that's what I know. I wouldn't consider myself knowledgeable enough about the internals of what prompted these changes to dig into what's going on under the hood, but I'll do my best to point to relevant issues or PRs so you can read more. And if this prompts some discussion which further elucidates some of the details; all the better.
 
 With that out of the way, let's tuck in...
 
@@ -49,7 +49,7 @@ Now, with the above changes in 1.0, `split` is gone for `UdpSocket` and we can j
 ```rust
 async fn main() -> io::Result<()> {
     let sock = UdpSocket::bind("0.0.0.0:8080").await?;
-    // Arc instead of split:
+    // Arc instead of split, make two refs
     let r = Arc::new(sock);
     let s = r.clone();
     let (tx, mut rx) = mpsc::channel::<(Vec<u8>, SocketAddr)>(1_000);
@@ -102,13 +102,24 @@ To make things more concrete, `UdpSocket` has the async method `recv`:
 pub async fn recv(&self, buf: &mut [u8]) -> Result<usize>
 ```
 
-If you're in async/await land this is great, use these methods. It's just when you're stuck writing `Stream` or `Future` impls that these methods don't do you any good. You need to be able to pass through `Context` and use `Poll`. This is where the `poll_*` variants come in:
+If you're in async/await land this is great, use these methods. It's just when you're stuck writing `Stream` or `Future` impls that these methods don't do you any good. Look at the type signature of a `Future`:
+
+```rust
+pub trait Future {
+    type Output;
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output>;
+}
+```
+
+`Stream` has a similar style to this. If you've got async methods, calling them from `poll` can be difficult and often produce bugs because you can easily end up creating a new future _on every invocation of `poll`_ rather than holding on to a single future and driving it to completion.
+
+In short, we need a `Poll` returning method that takes `Context`. This is where the `poll_*` variants come in:
 
 ```rust
 pub fn poll_recv(&self, cx: &mut Context<'_>, buf: &mut ReadBuf<'_>) -> Poll<Result<()>>
 ```
 
-With these methods exposed, you're free to write your own `Stream`/`Future` impls. This is a bit off-topic, but you can quickly turn a `poll_*` method into an async fn with [`poll_fn`](https://docs.rs/futures/0.3.8/futures/future/fn.poll_fn.html)
+With these methods exposed, you're free to write your own `Stream`/`Future` impls. This is a bit off-topic, but you can quickly turn a `poll_*` method into an async fn with [`poll_fn`](https://docs.rs/futures/0.3.8/futures/future/fn.poll_fn.html); and indeed, the async methods used to be written this way.
 
 ```rust
 poll_fn(|cx| self.poll_recv_from(cx, buf)).await
@@ -134,12 +145,13 @@ You should not try to _concurrently_ use either the `poll_recv` or `poll_send` m
 
 ## ReadBuf
 
-You may have noticed the `poll_recv` method exposes a `ReadBuf` type, this is a new type that `AsyncRead` and `AsyncWrite` also use in order to read/write into possibly uninitialized memory [#2716](https://github.com/tokio-rs/tokio/issues/2716). `ReadBuf` is a low level type that uses `MaybeUninit<u8>` under the hood and tracks what parts of the buffer have been filled/initialized. The main issue with static buffers like `[u8; 1024]`, as I understand it, is that the buffer must always be zero-initialized. This is a potentially costly operation, imagine on every read you have to allocate and zero out all of that memory. Because this is a divergence from the std types, there is a corresponding RFC to merge `ReadBuf` [into std](https://github.com/rust-lang/rust/issues/78485).
+You may have noticed the `poll_recv` method takes a `ReadBuf` type and not a `&mut [u8]`, this is a new type that `AsyncRead` and `AsyncWrite` also use in order to read/write into possibly uninitialized memory [#2716](https://github.com/tokio-rs/tokio/issues/2716). `ReadBuf` is a low level type that uses `MaybeUninit<u8>` under the hood and tracks what parts of the buffer have been filled/initialized. Why would we want to do this? The main issue with stack buffers like `[u8; 1024]`, as I understand it, is that the buffer must always be zero-initialized. This is a potentially costly operation, on every read you have to allocate and zero out all of that memory. Because this is a divergence from the std types, there is a corresponding RFC to merge `ReadBuf` [into std](https://github.com/rust-lang/rust/issues/78485).
 
-## Smaller changes
+## Sundries
 
 - `UdpSocket` and it's Tcp counterparts have gotten `async` readiness checking methods [#3138](https://github.com/tokio-rs/tokio/pull/3138).
 - Everything that uses `SocketAddr` now takes it by value, since the type is `Copy` we don't need the extra layer of indirection. Old tokio API's would often take `&SocketAddr`. async methods are still generic `<T: ToSocketAddrs>`.
+- Is there more missing here? Send me a message and let me know!
 
 ## Something I'd like to see in the future
 
@@ -147,6 +159,6 @@ I'd like to see some way to bound on a type that can `send`/`recv` in the same w
 
 ## Wrapping up
 
-Going from an early user of tokio and the futures ecosystem, futures 0.1 and tokio 0.1, seeing that evolve into the more mature `std::future` and tokio 0.2 has been fascinating. It's hard to believe it's been something like 4 years since this all started. I'm happy that most will not have to experience the pain of manual `Future` impls or working with nested combinators. I'm even happier, as a user of tokio, that they've decided to commit to this API for a good length of time. That keeps some of the burden off of application developers having to "keep up" with everything that's going on in the ecosystem. Not everyone has the desire to follow all of the PRs or subreddits & message boards.
+I was an early user of tokio and the futures ecosystem, I remember the slog of futures 0.1 and tokio 0.1, seeing that evolve into the more mature `std::future` and tokio 0.2 and now 1.0 has been fascinating. It's hard to believe it's been something like 4 years since this all started. I'm happy that most will not have to experience a manual `Future` impl or working with nested combinators. I'm even happier, as a user of tokio, that they've decided to commit to this API for a good length of time. That keeps some of the burden off of application developers having to "keep up" with everything that's going on in the ecosystem. Not everyone has the desire to follow all of the PRs or subreddits & message boards. I'm not speaking for myself, personally I can't get enough, but I understand that's not how others want to spend their free time.
 
 Anyway, congrats tokio team, you've done a wonderful job!
