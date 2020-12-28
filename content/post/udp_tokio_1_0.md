@@ -20,20 +20,20 @@ Now, for concurrent send/recv, I'm not sure how others used to handle this case,
 async fn run() -> Result<()> {
     let udp = UdpSocket::bind("0.0.0.0:8080").await?;
     // call split so we can give ownership of 'half' to one task
-    let (mut udp_recv, mut udp_send) = udp.split();
+    let (mut r, mut s) = udp.split();
 
     let (mut tx, mut rx) = mpsc::channel::<(Vec<u8>, SocketAddr)>(1_000);
 
     tokio::spawn(async move {
         while let Some((msg, addr)) = rx.recv().await {
-            let len = udp_send.send_to(&msg, &addr).await.unwrap();
+            let len = s.send_to(&msg, &addr).await.unwrap();
             println!("{:?} bytes sent", len);
         }
     });
 
     let mut buf = [0; 1024];
     loop {
-        let (len, addr) = udp_recv.recv_from(&mut buf).await?;
+        let (len, addr) = r.recv_from(&mut buf).await?;
         println!("{:?} bytes received from {:?}", len, addr);
         tx.send((buf[..len].to_vec(), addr)).await.unwrap();
     }
@@ -90,11 +90,11 @@ pub trait Decoder {
 }
 ```
 
-This API has remained much the same in the new `tokio-util`, although the internals of how it pulls down a frame has changed. Under the hood, `Decoder` used a set of methods prefixed with `poll_`, these are methods that are a mirror of their async counterparts, but that return `Poll`. In other words, `UdpSocket` now supports a `Poll` API, it has public methods for `recv`/`recv_from`/`send`/`send_to` that don't use `async` and instead return the `Poll` type.
+This API has remained much the same in the new `tokio-util`, although the internals of how it pulls down a frame has changed. Under the hood, `Decoder` used a set of methods prefixed with `poll_`, these are methods that are a mirror of their async counterparts, but that return `Poll`. These methods have now been committed to the public API. In other words, `UdpSocket` now supports a `Poll` returning methods for `recv`/`recv_from`/`send`/`send_to`.
 
-So now we have another way to write manual `Stream`/`Future` impls, which is a welcome addition if you don't want to be tied to other parts of the tokio ecosystem or you just need the extra flexibility.
+So now we have an alternative to `UdpFramed` to write manual `Stream` impls and a committed API for `Future` impls. This is a welcome addition if you don't want to be tied to other parts of the tokio ecosystem or you just need the extra flexibility.
 
-If you're unfamiliar with this `poll_` / `async` dichotomy, count yourself as lucky. It's nice that most users will only ever write `async` methods and never manually implement a `Future` or `Stream`. But sometimes in library code you need to do these things, and so tokio provides the building blocks, as a low level library, for both an `async` and non-async (`Context` receiving-- `Poll` returning) method now for each read/write action.
+If you're unfamiliar with this `poll_` / `async` dichotomy, count yourself as lucky. It's nice that most users will only ever write `async` methods and never manually implement a `Future` or `Stream`. But sometimes in library code you need to do these things, and so tokio provides the building blocks, as a low level library, for both an `async` and `Context` receiving-- `Poll` returning methods now for each read/write action.
 
 To make things more concrete, `UdpSocket` has the async method `recv`:
 
@@ -119,7 +119,7 @@ In short, we need a `Poll` returning method that takes `Context`. This is where 
 pub fn poll_recv(&self, cx: &mut Context<'_>, buf: &mut ReadBuf<'_>) -> Poll<Result<()>>
 ```
 
-With these methods exposed, you're free to write your own `Stream`/`Future` impls. This is a bit off-topic, but you can quickly turn a `poll_*` method into an async fn with [`poll_fn`](https://docs.rs/futures/0.3.8/futures/future/fn.poll_fn.html); and indeed, the async methods used to be written this way.
+This is a bit off-topic, but you can quickly turn a `poll_*` method into an async fn with [`poll_fn`](https://docs.rs/futures/0.3.8/futures/future/fn.poll_fn.html); and indeed, the async methods used to be written this way.
 
 ```rust
 poll_fn(|cx| self.poll_recv_from(cx, buf)).await
