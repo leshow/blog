@@ -176,7 +176,7 @@ if (!doNotTrack) {
   
   
   &nbsp;|&nbsp;
-  <i class="fa fa-clock-o"></i> 8 minutes (1591 words)
+  <i class="fa fa-clock-o"></i> 8 minutes (1603 words)
   
   
 </span>
@@ -327,6 +327,7 @@ if (!doNotTrack) {
 <ul>
 <li><code>broadcast::Sender&lt;_&gt;</code> uses <code>send</code> instead of <code>broadcast</code> now</li>
 <li><code>watch::Receiver&lt;_&gt;</code> uses <code>changed</code> now instead of <code>recv</code>, and <code>changed</code> only shows you readiness. You need to explicitly <code>borrow()</code> and <code>clone()</code> yourself now if you want a fresh <code>T</code></li>
+<li><code>acquire()</code> for <code>Semaphore</code> returns a <code>Result&lt;SemaphorePermit, _&gt;</code> now instead of just <code>SemaphorePermit</code></li>
 </ul>
 
 <h2 id="something-i-d-like-to-see-in-the-future">Something I&rsquo;d like to see in the future</h2>
