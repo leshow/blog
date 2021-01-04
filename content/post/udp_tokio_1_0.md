@@ -153,6 +153,11 @@ You may have noticed the `poll_recv` method takes a `ReadBuf` type and not a `&m
 - Everything that uses `SocketAddr` now takes it by value, since the type is `Copy` we don't need the extra layer of indirection. Old tokio API's would often take `&SocketAddr`. async methods are still generic `<T: ToSocketAddrs>`.
 - Is there more missing here? Send me a message and let me know!
 
+  **Edit**, more things I noticed:
+
+- `broadcast::Sender<_>` uses `send` instead of `broadcast` now
+- `watch::Receiver<_>` uses `changed` now instead of `recv`, and `changed` only shows you readiness. You need to explicitly `borrow()` and `clone()` yourself now if you want a fresh `T`
+
 ## Something I'd like to see in the future
 
 I'd like to see some way to bound on a type that can `send`/`recv` in the same way we can `<T: AsyncRead + AsyncWrite>`. I think this probably won't be added until there is a zero-cost way to make async methods in traits, and even then, I'm not sure if the tokio team even desires that behaviour. Personally, I think it would make writing `Framed` impls much more generic and allow a function to take both a `UdpSocket` or `Arc<UdpSocket>` generically. This would help when you want to make a `Decoder` for a socket that is shared among tasks concurrently.
