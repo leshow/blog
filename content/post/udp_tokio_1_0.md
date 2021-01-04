@@ -157,6 +157,7 @@ You may have noticed the `poll_recv` method takes a `ReadBuf` type and not a `&m
 
 - `broadcast::Sender<_>` uses `send` instead of `broadcast` now
 - `watch::Receiver<_>` uses `changed` now instead of `recv`, and `changed` only shows you readiness. You need to explicitly `borrow()` and `clone()` yourself now if you want a fresh `T`
+- `acquire()` for `Semaphore` returns a `Result<SemaphorePermit, _>` now instead of just `SemaphorePermit`
 
 ## Something I'd like to see in the future
 
