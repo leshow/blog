@@ -176,7 +176,7 @@ if (!doNotTrack) {
   
   
   &nbsp;|&nbsp;
-  <i class="fa fa-clock-o"></i> 8 minutes (1675 words)
+  <i class="fa fa-clock-o"></i> 8 minutes (1670 words)
   
   
 </span>
@@ -323,16 +323,11 @@ if (!doNotTrack) {
 <ul>
 <li><code>UdpSocket</code> and it&rsquo;s Tcp counterparts have gotten <code>async</code> readiness checking methods <a href="https://github.com/tokio-rs/tokio/pull/3138">#3138</a>.</li>
 <li>Everything that uses <code>SocketAddr</code> now takes it by value, since the type is <code>Copy</code> we don&rsquo;t need the extra layer of indirection. Old tokio API&rsquo;s would often take <code>&amp;SocketAddr</code>. async methods are still generic <code>&lt;T: ToSocketAddrs&gt;</code>.</li>
-<li>Is there more missing here? Send me a message and let me know!</li>
-</ul>
-
-<p><strong>Edit</strong>, more things I noticed:</p>
-
-<ul>
 <li><code>broadcast::Sender&lt;_&gt;</code> uses <code>send</code> instead of <code>broadcast</code> now</li>
 <li><code>watch::Receiver&lt;_&gt;</code> uses <code>changed</code> now instead of <code>recv</code>, and <code>changed</code> only shows you readiness. You need to explicitly <code>borrow()</code> and <code>clone()</code> yourself now if you want a fresh <code>T</code></li>
 <li><code>acquire()</code> for <code>Semaphore</code> returns a <code>Result&lt;SemaphorePermit, _&gt;</code> now instead of just <code>SemaphorePermit</code></li>
 <li><code>time::delay_until</code> and <code>time::delay</code> have been renamed to <code>time::sleep</code> to be more std-like in naming</li>
+<li>Is there more missing here? Send me a message and let me know!</li>
 </ul>
 
 <h2 id="something-i-d-like-to-see-in-the-future">Something I&rsquo;d like to see in the future</h2>

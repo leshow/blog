@@ -155,14 +155,11 @@ You may have noticed the `poll_recv` method takes a `ReadBuf` type and not a `&m
 
 - `UdpSocket` and it's Tcp counterparts have gotten `async` readiness checking methods [#3138](https://github.com/tokio-rs/tokio/pull/3138).
 - Everything that uses `SocketAddr` now takes it by value, since the type is `Copy` we don't need the extra layer of indirection. Old tokio API's would often take `&SocketAddr`. async methods are still generic `<T: ToSocketAddrs>`.
-- Is there more missing here? Send me a message and let me know!
-
-  **Edit**, more things I noticed:
-
 - `broadcast::Sender<_>` uses `send` instead of `broadcast` now
 - `watch::Receiver<_>` uses `changed` now instead of `recv`, and `changed` only shows you readiness. You need to explicitly `borrow()` and `clone()` yourself now if you want a fresh `T`
 - `acquire()` for `Semaphore` returns a `Result<SemaphorePermit, _>` now instead of just `SemaphorePermit`
 - `time::delay_until` and `time::delay` have been renamed to `time::sleep` to be more std-like in naming
+- Is there more missing here? Send me a message and let me know!
 
 ## Something I'd like to see in the future
 
