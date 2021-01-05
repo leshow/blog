@@ -176,7 +176,7 @@ if (!doNotTrack) {
   
   
   &nbsp;|&nbsp;
-  <i class="fa fa-clock-o"></i> 8 minutes (1670 words)
+  <i class="fa fa-clock-o"></i> 9 minutes (1705 words)
   
   
 </span>
@@ -333,6 +333,8 @@ if (!doNotTrack) {
 <h2 id="something-i-d-like-to-see-in-the-future">Something I&rsquo;d like to see in the future</h2>
 
 <p>I&rsquo;d like to see some way to bound on a type that can <code>send</code>/<code>recv</code> in the same way we can <code>&lt;T: AsyncRead + AsyncWrite&gt;</code>. I think this probably won&rsquo;t be added until there is a zero-cost way to make async methods in traits, and even then, I&rsquo;m not sure if the tokio team even desires that behaviour. Personally, I think it would make writing <code>Framed</code> impls much more generic and allow a function to take both a <code>UdpSocket</code> or <code>Arc&lt;UdpSocket&gt;</code> generically. This would help when you want to make a <code>Decoder</code> for a socket that is shared among tasks concurrently.</p>
+
+<p>A helpful reddit <a href="https://www.reddit.com/r/rust/comments/kltg2p/a_look_at_tokio_10_api_changes/ghdf6ym/?utm_source=reddit&amp;utm_medium=web2x&amp;context=3">comment</a> suggested that <code>UdpFramed</code> could take a <code>Borrow&lt;UdpSocket&gt;</code> and thus be generic over <code>UdpSocket</code> and <code>Arc&lt;UdpSocket&gt;</code>. I think this is a great idea and added it to my PR of <code>tokio-util</code> <a href="https://github.com/tokio-rs/tokio/pull/3086">here</a>.</p>
 
 <h2 id="wrapping-up">Wrapping up</h2>
 
