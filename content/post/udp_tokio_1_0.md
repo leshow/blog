@@ -147,6 +147,10 @@ You should not try to _concurrently_ use either the `poll_recv` or `poll_send` m
 
 You may have noticed the `poll_recv` method takes a `ReadBuf` type and not a `&mut [u8]`, this is a new type that `AsyncRead` and `AsyncWrite` also use in order to read/write into possibly uninitialized memory [#2716](https://github.com/tokio-rs/tokio/issues/2716). `ReadBuf` is a low level type that uses `MaybeUninit<u8>` under the hood and tracks what parts of the buffer have been filled/initialized. Why would we want to do this? The main issue with stack buffers like `[u8; 1024]`, as I understand it, is that the buffer must always be zero-initialized. This is a potentially costly operation, you have to allocate and zero out all of that memory. Because this is a divergence from the std types, there is a corresponding RFC to merge `ReadBuf` [into std](https://github.com/rust-lang/rust/issues/78485).
 
+## tokio-stream
+
+`tokio-stream` is a new crate that moves `tokio::stream::Stream` & related traits are out and into it's own crate. There's also a bunch of helpful `tokio_stream::wrappers` which can turn a `TcpListener` or `UnixListener` into a `Stream`. Other wrappers include `Interval` for working with a stream of timers. These wrapper types often use the `poll_*` API's I mentioned earlier.
+
 ## Sundries
 
 - `UdpSocket` and it's Tcp counterparts have gotten `async` readiness checking methods [#3138](https://github.com/tokio-rs/tokio/pull/3138).
@@ -158,6 +162,7 @@ You may have noticed the `poll_recv` method takes a `ReadBuf` type and not a `&m
 - `broadcast::Sender<_>` uses `send` instead of `broadcast` now
 - `watch::Receiver<_>` uses `changed` now instead of `recv`, and `changed` only shows you readiness. You need to explicitly `borrow()` and `clone()` yourself now if you want a fresh `T`
 - `acquire()` for `Semaphore` returns a `Result<SemaphorePermit, _>` now instead of just `SemaphorePermit`
+- `time::delay_until` and `time::delay` have been renamed to `time::sleep` to be more std-like in naming
 
 ## Something I'd like to see in the future
 

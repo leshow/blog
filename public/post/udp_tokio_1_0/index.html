@@ -176,7 +176,7 @@ if (!doNotTrack) {
   
   
   &nbsp;|&nbsp;
-  <i class="fa fa-clock-o"></i> 8 minutes (1603 words)
+  <i class="fa fa-clock-o"></i> 8 minutes (1675 words)
   
   
 </span>
@@ -314,6 +314,10 @@ if (!doNotTrack) {
 
 <p>You may have noticed the <code>poll_recv</code> method takes a <code>ReadBuf</code> type and not a <code>&amp;mut [u8]</code>, this is a new type that <code>AsyncRead</code> and <code>AsyncWrite</code> also use in order to read/write into possibly uninitialized memory <a href="https://github.com/tokio-rs/tokio/issues/2716">#2716</a>. <code>ReadBuf</code> is a low level type that uses <code>MaybeUninit&lt;u8&gt;</code> under the hood and tracks what parts of the buffer have been filled/initialized. Why would we want to do this? The main issue with stack buffers like <code>[u8; 1024]</code>, as I understand it, is that the buffer must always be zero-initialized. This is a potentially costly operation, you have to allocate and zero out all of that memory. Because this is a divergence from the std types, there is a corresponding RFC to merge <code>ReadBuf</code> <a href="https://github.com/rust-lang/rust/issues/78485">into std</a>.</p>
 
+<h2 id="tokio-stream">tokio-stream</h2>
+
+<p><code>tokio-stream</code> is a new crate that moves <code>tokio::stream::Stream</code> &amp; related traits are out and into it&rsquo;s own crate. There&rsquo;s also a bunch of helpful <code>tokio_stream::wrappers</code> which can turn a <code>TcpListener</code> or <code>UnixListener</code> into a <code>Stream</code>. Other wrappers include <code>Interval</code> for working with a stream of timers. These wrapper types often use the <code>poll_*</code> API&rsquo;s I mentioned earlier.</p>
+
 <h2 id="sundries">Sundries</h2>
 
 <ul>
@@ -328,6 +332,7 @@ if (!doNotTrack) {
 <li><code>broadcast::Sender&lt;_&gt;</code> uses <code>send</code> instead of <code>broadcast</code> now</li>
 <li><code>watch::Receiver&lt;_&gt;</code> uses <code>changed</code> now instead of <code>recv</code>, and <code>changed</code> only shows you readiness. You need to explicitly <code>borrow()</code> and <code>clone()</code> yourself now if you want a fresh <code>T</code></li>
 <li><code>acquire()</code> for <code>Semaphore</code> returns a <code>Result&lt;SemaphorePermit, _&gt;</code> now instead of just <code>SemaphorePermit</code></li>
+<li><code>time::delay_until</code> and <code>time::delay</code> have been renamed to <code>time::sleep</code> to be more std-like in naming</li>
 </ul>
 
 <h2 id="something-i-d-like-to-see-in-the-future">Something I&rsquo;d like to see in the future</h2>
