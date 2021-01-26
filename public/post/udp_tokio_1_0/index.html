@@ -176,7 +176,7 @@ if (!doNotTrack) {
   
   
   &nbsp;|&nbsp;
-  <i class="fa fa-clock-o"></i> 8 minutes (1695 words)
+  <i class="fa fa-clock-o"></i> 8 minutes (1694 words)
   
   
 </span>
@@ -231,7 +231,7 @@ if (!doNotTrack) {
 </span><span class="w">    </span><span class="p">}</span><span class="w">
 </span><span class="w"></span><span class="p">}</span><span class="w">
 </span></code></pre></div>
-<p>You can see here <code>split</code> gets around the <code>&amp;mut self</code> property of <code>recv</code> and <code>send</code>. The split api let&rsquo;s us get each &ldquo;half&rdquo; that can be moved into it&rsquo;s own fully owned task, we can then concurrently <code>send</code> and <code>recv</code> afterwards.</p>
+<p>You can see here <code>split</code> gets around the <code>&amp;mut self</code> property of <code>recv</code> and <code>send</code>. The split api let&rsquo;s us get each &ldquo;half&rdquo; that can be moved into its own fully-owned task, we can then concurrently <code>send</code> and <code>recv</code> afterwards.</p>
 
 <h3 id="after">After</h3>
 
@@ -260,7 +260,7 @@ if (!doNotTrack) {
 </span></code></pre></div>
 <p>Another thing about <code>&amp;self</code> methods is that we can <code>send</code>/<code>recv</code> from BOTH tasks, whereas before there was a dedicated &ldquo;sending&rdquo; and &ldquo;receiving&rdquo; half. You could also imagine a more complicated setup where we give a reference to more than two tasks.</p>
 
-<p>Note that in both before/after cases here, we could easily <code>tokio::spawn</code> in the loop and pass in a <code>clone</code>d <code>Sender</code> in order to run each message in it&rsquo;s own task (if we were doing something actually useful). That way we&rsquo;re not doing anything in our read loop but pulling data off the socket.</p>
+<p>Note that in both before/after cases here, we could easily <code>tokio::spawn</code> in the loop and pass in a <code>clone</code>d <code>Sender</code> in order to run each message in its own task (if we were doing something actually useful). That way we&rsquo;re not doing anything in our read loop but pulling data off the socket.</p>
 
 <h2 id="poll-api">Poll API</h2>
 
@@ -321,7 +321,7 @@ if (!doNotTrack) {
 <h2 id="sundries">Sundries</h2>
 
 <ul>
-<li><code>UdpSocket</code> and it&rsquo;s Tcp counterparts have gotten <code>async</code> readiness checking methods <a href="https://github.com/tokio-rs/tokio/pull/3138">#3138</a>.</li>
+<li><code>UdpSocket</code> and its Tcp counterparts have gotten <code>async</code> readiness checking methods <a href="https://github.com/tokio-rs/tokio/pull/3138">#3138</a>.</li>
 <li>Everything that uses <code>SocketAddr</code> now takes it by value, since the type is <code>Copy</code> we don&rsquo;t need the extra layer of indirection. Old tokio API&rsquo;s would often take <code>&amp;SocketAddr</code>. async methods are still generic <code>&lt;T: ToSocketAddrs&gt;</code>.</li>
 <li><code>broadcast::Sender&lt;_&gt;</code> uses <code>send</code> instead of <code>broadcast</code> now</li>
 <li><code>watch::Receiver&lt;_&gt;</code> uses <code>changed</code> now instead of <code>recv</code>, and <code>changed</code> only shows you readiness. You need to explicitly <code>borrow()</code> and <code>clone()</code> yourself now if you want a fresh <code>T</code></li>
