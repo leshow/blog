@@ -40,7 +40,7 @@ async fn run() -> Result<()> {
 }
 ```
 
-You can see here `split` gets around the `&mut self` property of `recv` and `send`. The split api let's us get each "half" that can be moved into it's own fully owned task, we can then concurrently `send` and `recv` afterwards.
+You can see here `split` gets around the `&mut self` property of `recv` and `send`. The split api let's us get each "half" that can be moved into its own fully-owned task, we can then concurrently `send` and `recv` afterwards.
 
 ### After
 
@@ -72,7 +72,7 @@ async fn main() -> io::Result<()> {
 
 Another thing about `&self` methods is that we can `send`/`recv` from BOTH tasks, whereas before there was a dedicated "sending" and "receiving" half. You could also imagine a more complicated setup where we give a reference to more than two tasks.
 
-Note that in both before/after cases here, we could easily `tokio::spawn` in the loop and pass in a `clone`d `Sender` in order to run each message in it's own task (if we were doing something actually useful). That way we're not doing anything in our read loop but pulling data off the socket.
+Note that in both before/after cases here, we could easily `tokio::spawn` in the loop and pass in a `clone`d `Sender` in order to run each message in its own task (if we were doing something actually useful). That way we're not doing anything in our read loop but pulling data off the socket.
 
 ## Poll API
 
@@ -153,7 +153,7 @@ You may have noticed the `poll_recv` method takes a `ReadBuf` type and not a `&m
 
 ## Sundries
 
-- `UdpSocket` and it's Tcp counterparts have gotten `async` readiness checking methods [#3138](https://github.com/tokio-rs/tokio/pull/3138).
+- `UdpSocket` and its Tcp counterparts have gotten `async` readiness checking methods [#3138](https://github.com/tokio-rs/tokio/pull/3138).
 - Everything that uses `SocketAddr` now takes it by value, since the type is `Copy` we don't need the extra layer of indirection. Old tokio API's would often take `&SocketAddr`. async methods are still generic `<T: ToSocketAddrs>`.
 - `broadcast::Sender<_>` uses `send` instead of `broadcast` now
 - `watch::Receiver<_>` uses `changed` now instead of `recv`, and `changed` only shows you readiness. You need to explicitly `borrow()` and `clone()` yourself now if you want a fresh `T`
