@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>nailgun: DNS benchmarking tool</title>
+  <meta property="og:title" content="nailgun: DNS benchmarking tool" />
+  <meta name="twitter:title" content="nailgun: DNS benchmarking tool" />
+  <meta name="description" content="nailgun is a small hobby project I&rsquo;ve been working on sparsely for a few months, it&rsquo;s a cli DNS benchmarking tool heavily inspired by flamethrower but written in Rust with tokio. I&rsquo;ve been working at the intersection of DNS &amp; Rust for a little while and this is something I&rsquo;ve been pushing along in my free time.
+Rest assured, it has no real reason for existing just yet other than I felt like writing it so if you&rsquo;re looking for a quality DNS performance testing client then you should probably still use flamethrower.">
+  <meta property="og:description" content="nailgun is a small hobby project I&rsquo;ve been working on sparsely for a few months, it&rsquo;s a cli DNS benchmarking tool heavily inspired by flamethrower but written in Rust with tokio. I&rsquo;ve been working at the intersection of DNS &amp; Rust for a little while and this is something I&rsquo;ve been pushing along in my free time.
+Rest assured, it has no real reason for existing just yet other than I felt like writing it so if you&rsquo;re looking for a quality DNS performance testing client then you should probably still use flamethrower.">
+  <meta name="twitter:description" content="nailgun is a small hobby project I&rsquo;ve been working on sparsely for a few months, it&rsquo;s a cli DNS benchmarking tool heavily inspired by flamethrower but written in Rust with tokio. …">
+  <meta name="author" content="Evan Cameron"/>
+  <link href='https://leshow.github.io/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@evan_cam_" />
+  <meta name="twitter:creator" content="@evan_cam_" />
+  <meta property="og:url" content="https://leshow.github.io/post/nailgun/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Esoterically Typed" />
+
+  <meta name="generator" content="Hugo 0.57.2" />
+  <link rel="canonical" href="https://leshow.github.io/post/nailgun/" />
+  <link rel="alternate" href="https://leshow.github.io/index.xml" type="application/rss+xml" title="Esoterically Typed">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.css" integrity="sha384-wITovz90syo1dJWVh32uuETPVEtGigN07tkttEqPv+uR2SE/mbQcG7ATL28aI9H0" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://leshow.github.io/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://leshow.github.io/css/highlight.min.css" /><link rel="stylesheet" href="https://leshow.github.io/css/codeblock.css" />
+
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-145420817-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://leshow.github.io">Esoterically Typed</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Blog" href="/">Blog</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    <div class="avatar-container">
+      <div class="avatar-img-border">
+        
+          <a title="Esoterically Typed" href="https://leshow.github.io">
+            <img class="avatar-img" src="https://leshow.github.io/img/avatar-icon.png" alt="Esoterically Typed" />
+          </a>
+        
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+    
+  
+  
+  
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>nailgun: DNS benchmarking tool</h1>
+                
+                
+                  <span class="post-meta">
+  
+  
+  <i class="fa fa-calendar-o"></i>&nbsp;Posted on August 22, 2021
+  
+  
+  &nbsp;|&nbsp;
+  <i class="fa fa-clock-o"></i> 5 minutes (1043 words)
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        
+
+<p><code>nailgun</code> is a small hobby project I&rsquo;ve been working on sparsely for a few months, it&rsquo;s a cli DNS benchmarking tool heavily inspired by <a href="https://github.com/DNS-OARC/flamethrower">flamethrower</a> but written in Rust with tokio. I&rsquo;ve been working at the intersection of DNS &amp; Rust for a little while and this is something I&rsquo;ve been pushing along in my free time.</p>
+
+<p>Rest assured, it has no real reason for existing just yet other than I felt like writing it so if you&rsquo;re looking for a quality DNS performance testing client then you should probably still use flamethrower. But, if you want to help make <code>nailgun</code> better then I&rsquo;m open to PRs, issues, or suggestions. I feel I&rsquo;ve got things in a &ldquo;good enough&rdquo; state that I can release the code and continue to develop it in the open. My hope is that at the very least it&rsquo;s another small-ish tokio project that people can look at for clues when building their own projects. If I haven&rsquo;t dissuaded you yet, it&rsquo;s available <a href="https://github.com/leshow/nailgun">here</a> on github.</p>
+
+<h2 id="design">Design</h2>
+
+<p>By default, <code>nailgun</code> will run one tokio worker thread and one traffic generator task, with both values being configurable via cli args. Each generator creates a <code>TcpStream</code> or <code>UdpSocket</code> and a <code>Store</code>. <code>Store</code> is a <code>parking_lot::Mutex</code> protected chunk of memory storing the available ids and a hashmap representing the current queries that are in-flight, mapped by their id.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">struct</span> <span class="nc">Store</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">ids</span>: <span class="nc">VecDeque</span><span class="o">&lt;</span><span class="kt">u16</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">in_flight</span>: <span class="nc">FxHashMap</span><span class="o">&lt;</span><span class="kt">u16</span><span class="p">,</span><span class="w"> </span><span class="n">QueryInfo</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="c1">// stores time sent &amp; buffer len
+</span><span class="c1"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>DNS is an ancient protocol and its ids are <code>u16</code> values, so there is an upper limit on the number of in-flight messages any generator can have at one time (2^16 - 1 = 65535). I considered alternate designs without the mutex but in practice it seemed plenty fast enough, and an async mutex is not necessary here because a lock is <a href="https://tokio-rs.github.io/tokio/doc/tokio/sync/struct.Mutex.html#which-kind-of-mutex-should-you-use">never held across an await point</a>.</p>
+
+<p>On startup, the entire range of u16 values are generated and randomly shuffled, then put in a <code>VecDeque</code> so that new messages can pop ids from the front and received ids pushed to the back. Since nailgun doesn&rsquo;t care too much about the contents of the message (yet) they are not decoded, we just peak in the header and mask off the bits necessary to get things like the id &amp; rcodes. This strategy means that we&rsquo;re only looking at the lower 4 bits of the rcode, ignoring EDNS. Maybe this is something to expand on later. If you want more information about what a DNS header or message looks like, I have some 2000&rsquo;s era websites for you! <a href="http://www.networksorcery.com/enp/default.htm">networksorcery</a> and <a href="http://www.tcpipguide.com/free/t_DNSMessageHeaderandQuestionSectionFormat.htm">tcp/ip guide</a> both have great DNS sections. The relevant RFCs are also good but there are many and they are pretty dry.</p>
+
+<p>In addition to this the store, generators start 2 tasks: one for creating &amp; sending all the DNS messages, and one for handling timed out queries (look through the in-flight hashmap and clear anything above a certain age, returning cleared ids to the queue).</p>
+
+<p>The generator&rsquo;s main loop is a <code>tokio::select!</code> future with 3 branches:</p>
+
+<ul>
+<li>read a message from UDP or TCP</li>
+<li>every second&ndash; gather up all the stats from this generator &amp; send via mpsc channel to another task that will aggregate/log</li>
+<li>listen for shutdown signal or any child tasks handles returning. Shutdown portions lifted from <a href="https://github.com/tokio-rs/mini-redis">mini-redis</a></li>
+</ul>
+
+<p>If this is all clear as mud, I&rsquo;ve done my best to represent it visually. The blue boxes are tokio tasks, each with a reference to the <code>Store</code>, and showing the main futures they execute in green:</p>
+
+<p><img src="/nailgun/nailgun_generator.jpg" alt="generator" /></p>
+
+<h2 id="ecosystem">Ecosystem</h2>
+
+<p>There are other elements at play here, like query generation, logging, and rate limiting, but I think I&rsquo;ve covered the interesting bits. I&rsquo;d be remiss if I didn&rsquo;t mention the many awesome crates in the Rust ecosystem that make something like this application doable in a few thousand lines:</p>
+
+<ul>
+<li><p><code>tokio</code> obviously</p></li>
+
+<li><p><code>trust-dns-proto</code> is awesome for anything DNS related, they have first-class types for parsing and encoding dns messages</p></li>
+
+<li><p><code>tracing</code> takes care of logging, I use it in pretty much every project these days. nailgun is set up to output structured JSON or unstructured, and optionally write to file. There is some friction if you want to change tracing options at startup based on user input (cli flags in this case) however, the code can be a bit repetitive because tracing lifts its config to the type level (<a href="https://docs.rs/tracing-subscriber/0.2.20/tracing_subscriber/layer/struct.Layered.html">Layered</a> is pretty much an HList afaict, reminds me a lot of tower&rsquo;s <a href="https://github.com/tower-rs/tower/blob/master/tower-layer/src/stack.rs#L6">Stack</a>). There may be some better way to do this but I have not found it.</p></li>
+
+<li><p><code>governor</code> saved me a lot of time having to write my own rate limiting abstraction. The nailgun repo still has remnants of a few token bucket attempts I may dig into later for my own interest.</p></li>
+
+<li><p><code>clap</code> for arg parsing, although I had a few issues where clap couldn&rsquo;t express the same parameter types as flamethrower meaning I had to diverge a bit. In flamethrower, you can pass <code>-g randomlabel lblsize=10 lblcount=4</code> where the first arg to <code>-g</code> is one of a set of variants, then the others are variables passed to it. As far as I can tell there is no way to do that in <code>clap</code>. You can have a subcommand but not behind an arg, and you can parse key-value pairs but not like this.</p></li>
+
+<li><p>notable mentions: <code>anyhow</code>/<code>parking_lot</code>/<code>async_trait</code></p></li>
+</ul>
+
+<h2 id="current-limitations-conclusion">Current Limitations &amp; Conclusion</h2>
+
+<p>There&rsquo;s a couple things I&rsquo;d like to improve. Firstly, the TCP traffic generator opens up a single <code>TcpStream</code>; this probably needs to change so that it&rsquo;s more representative of the real world. More investigation needs to be done with running additional concurrent traffic generators there currently isn&rsquo;t much of a performance difference. The statistics gathering/logging is a bit messy, and I&rsquo;m sure there is room for better abstractions in a few places. So that&rsquo;s pretty much everything :)</p>
+
+<p>I&rsquo;d also like to have the default traffic generating mechanism rate-limit itself once the downstream starts to return some threshold of timeouts, perhaps making this configurable. Currently, if you don&rsquo;t pass a QPS (<code>-Q</code> queries per second) parameter then nailgun will just continue to send traffic as fast as possible. Also, there are some features flamethrower has that would be nice to add to nailgun too, like its ability to construct a <a href="https://github.com/DNS-OARC/flamethrower#dynamic-qps-flow">&ldquo;QPS flow&rdquo;</a>.</p>
+
+<p>Until next time!</p>
+
+
+        
+
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://leshow.github.io/post/udp_tokio_1_0/" data-toggle="tooltip" data-placement="top" title="A look at tokio 1.0 API Changes">&larr; Previous Post</a>
+            </li>
+          
+          
+        </ul>
+      
+
+
+      
+        
+        
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="mailto:cameron.evan@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://github.com/leshow" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/evan_cam_" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://linkedin.com/in/evan-cameron" title="LinkedIn">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-linkedin fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              <a href="leshow.github.io">Evan Cameron</a>
+            
+          
+
+          &nbsp;&bull;&nbsp;
+          2021
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://leshow.github.io">Esoterically Typed</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.57.2</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.js" integrity="sha384-/y1Nn9+QQAipbNQWU65krzJralCnuOasHncUFXGkdwntGeSvQicrYkiUBwsgUqc1" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/contrib/auto-render.min.js" integrity="sha384-dq1/gEHSxPZQ7DdrM82ID4YVol9BYyU7GbWlIwnwyPzotpoc57wDw/guX8EaYGPx" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/main.js"></script>
+<script src="https://leshow.github.io/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> $(document).ready(function() {$("pre.chroma").css("padding","0");}); </script><script> renderMathInElement(document.body); </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+  </body>
+</html>
+

@@ -1,7 +1,7 @@
 ---
 title: "nailgun: DNS benchmarking tool"
-date: 2021-08-22T15:55:12-04:00
-draft: true
+date: 2021-08-22T09:55:12-04:00
+draft: false
 ---
 
 `nailgun` is a small hobby project I've been working on sparsely for a few months, it's a cli DNS benchmarking tool heavily inspired by [flamethrower](https://github.com/DNS-OARC/flamethrower) but written in Rust with tokio. I've been working at the intersection of DNS & Rust for a little while and this is something I've been pushing along in my free time.
