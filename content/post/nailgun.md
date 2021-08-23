@@ -45,7 +45,7 @@ There are other elements at play here, like query generation, logging, and rate 
 
 - `tracing` takes care of logging, I use it in pretty much every project these days. nailgun is set up to output structured JSON or unstructured, and optionally write to file. There is some friction if you want to change tracing options at startup based on user input (cli flags in this case) however, the code can be a bit repetitive because tracing lifts its config to the type level ([Layered](https://docs.rs/tracing-subscriber/0.2.20/tracing_subscriber/layer/struct.Layered.html) is pretty much an HList afaict, reminds me a lot of tower's [Stack](https://github.com/tower-rs/tower/blob/master/tower-layer/src/stack.rs#L6)). There may be some better way to do this but I have not found it.
 
-- `governor` saved me a lot of time having to write my own rate limiting abstraction. The nailgun repo still has remnants of a few token bucket attempts I may dig into later for my own interest.
+- `governor` the nailgun repo still has remnants of a few token bucket yak shaves before I decided to just use this and everything "just worked".
 
 - `clap` for arg parsing, although I had a few issues where clap couldn't express the same parameter types as flamethrower meaning I had to diverge a bit. In flamethrower, you can pass `-g randomlabel lblsize=10 lblcount=4` where the first arg to `-g` is one of a set of variants, then the others are variables passed to it. As far as I can tell there is no way to do that in `clap`. You can have a subcommand but not behind an arg, and you can parse key-value pairs but not like this.
 
