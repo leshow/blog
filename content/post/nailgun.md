@@ -4,7 +4,7 @@ date: 2021-08-22T09:55:12-04:00
 draft: false
 ---
 
-`nailgun` is a small hobby project I've been working on sparsely for a few months, it's a cli DNS benchmarking tool heavily inspired by [flamethrower](https://github.com/DNS-OARC/flamethrower) but written in Rust with tokio. I've been working at the intersection of DNS & Rust for a little while and this is something I've been pushing along in my free time.
+[nailgun](https://github.com/leshow/nailgun) is a small hobby project I've been working on sparsely for a few months, it's a cli DNS benchmarking tool heavily inspired by [flamethrower](https://github.com/DNS-OARC/flamethrower) but written in Rust with tokio. I've been working at the intersection of DNS & Rust for a little while and this is something I've been pushing along in my free time.
 
 Rest assured, it has no real reason for existing just yet other than I felt like writing it so if you're looking for a quality DNS performance testing client then you should probably still use flamethrower. But, if you want to help make `nailgun` better then I'm open to PRs, issues, or suggestions. I feel I've got things in a "good enough" state that I can release the code and continue to develop it in the open. My hope is that at the very least it's another small-ish tokio project that people can look at for clues when building their own projects. If I haven't dissuaded you yet, it's available [here](https://github.com/leshow/nailgun) on github.
 
