@@ -8,7 +8,7 @@ Announcing a new Rust library! [`dhcproto`](https://crates.io/crates/dhcproto) i
 
 DHCP is perhaps not the most popular protocol, but never-the-less integral to networks everywhere. We hope to improve the situation marginally by having a high-quality (I hope) library released for everyone to use/contribute to.
 
-**Note**: If you know Rust and are a network aficionado, we are always looking for people so feel free to reach out to me.
+**Job Note**: If you know Rust and have an interest in networking, we are always looking for people so feel free to reach out to me!
 
 ## a brief (and mostly wrong) account of DHCP
 
@@ -110,7 +110,7 @@ Value    Message Type
 
 (3)
 
-As you can see the message types here are totally different, but fear not! There is another mnemonic to remember: "SARR". This is again the happy path of address assignment, Solicit, Advertise, Request, Reply. To address the "no broadcast" restriction in IPv6, DHCPv6 uses a dedicated multicast address. There are more complicated things added to the protocol like SLAAC (stateless address auto configuration) but this is well beyond the scope of this post.
+As you can see the message types here are totally different, but fear not! There is a brand new mnemonic to remember: "SARR". This is again the happy path of address assignment, Solicit, Advertise, Request, Reply. To address the "no broadcast" restriction in IPv6, DHCPv6 uses a dedicated multicast address. There are more complicated things added to the protocol like SLAAC (stateless address auto configuration) but this is well beyond the scope of this post.
 
 Sources:
 
