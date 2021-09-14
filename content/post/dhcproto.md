@@ -8,7 +8,7 @@ Announcing a new Rust library! [`dhcproto`](https://crates.io/crates/dhcproto) i
 
 DHCP is perhaps not the most popular protocol, but never-the-less integral to networks everywhere. We hope to improve the situation marginally by having a high-quality (I hope) library released for everyone to use/contribute to.
 
-**Job Note**: If you know Rust and have an interest in networking, we are always looking for people so feel free to reach out to me!
+**Looking for a Job?**: If you know Rust and have an interest in networking, we are always looking for people so feel free to reach out to me!
 
 ## a brief (and mostly wrong) account of DHCP
 
