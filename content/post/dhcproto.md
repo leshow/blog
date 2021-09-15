@@ -1,20 +1,20 @@
 ---
-title: "dhcproto"
+title: "Introducing: DHCProto"
 date: 2021-09-14T14:08:51-04:00
-draft: true
+draft: false
 ---
 
-Announcing a new Rust library! [`dhcproto`](https://crates.io/crates/dhcproto) is available now on [crates.io](https://crates.io/crates/dhcproto). [`dhcproto`](https://crates.io/crates/dhcproto) aims to be a full DHCPv4 & DHCPv6 decoder/encoder. There are not many DHCP crates out there with a comprehensive list of option types implemented, and none had everything we needed particularly when it came to serializing back to bytes and dhcpv6. This library was written at my work ([Bluecat](https://bluecatnetworks.com/)), and they have graciously let us open source it, available on [github](https://github.com/bluecatengineering/dhcproto) for issues/comments/PRs.
+[`DHCProto`](https://crates.io/crates/dhcproto) is available now on [crates.io](https://crates.io/crates/dhcproto). [`DHCProto`](https://crates.io/crates/dhcproto) implements a parser/encoder for DHCPv4 & DHCPv6. This crate was born out of the dearth of DHCP offerings currently available. It has a comprehensive list of option types implemented, includes serializing a message back to bytes, and DHCPv6. This library was written at my work ([Bluecat](https://bluecatnetworks.com/)), and they have graciously let us open source it, available on [github](https://github.com/bluecatengineering/dhcproto) for issues/comments/PRs. The encoder/decoder traits are inspired a lot by `trust-dns-proto`.
 
 DHCP is perhaps not the most popular protocol, but never-the-less integral to networks everywhere. We hope to improve the situation marginally by having a high-quality (I hope) library released for everyone to use/contribute to.
 
-**Looking for a Job?**: If you know Rust and have an interest in networking, we are always looking for people so feel free to reach out to me!
+**Interested?**: If you know Rust and have an interest/experience in writing network services, we are always looking for talented people so feel free to reach out to me!
 
-## a brief (and mostly wrong) account of DHCP
+## A brief and incomplete history of DHCP
 
-DHCPv4 was based on the anachronistic [BOOTP](https://en.wikipedia.org/wiki/Bootstrap_Protocol), originally defined in RFC 951 and requiring a floppy disk. The relative low RFC number should give another indication to its age. This protocol was then extended to support dynamic addresses, which is where DHPCv4 comes into the picture.
+DHCPv4 was based on the anachronistic [BOOTP](https://en.wikipedia.org/wiki/Bootstrap_Protocol), which was itself created to solve problems with [RARP](https://en.wikipedia.org/wiki/Reverse_Address_Resolution_Protocol). BOOTP was defined in RFC 951 and run from floppy disks. The relatively low RFC number should give another indication to its age. This protocol was then evolved to support dynamic addresses, which is where DHCP (v4) comes into the picture.
 
-DHCPv4 was first introduced in RFC 1531 in '93 (1), later finalized in '97. DHCP takes the same header layout as BOOTP:
+DHCP was first introduced in RFC 1531 in '93 (1), later finalized in '97. DHCP takes the same header layout as BOOTP:
 
 ```text
  0                   1                   2                   3
@@ -44,7 +44,7 @@ DHCPv4 was first introduced in RFC 1531 in '93 (1), later finalized in '97. DHCP
  +---------------------------------------------------------------+
 ```
 
-But extends it by adding more `options`. This is a variable-width section of the protocol that contains many different things, but most importantly contains a new option called 'message type'. The message types are as follows:
+But extends it by adding more `options`. This is a variable-width section of the protocol that contains potentially many different things, but most importantly a new option type was added called 'message type'. The message types are as follows:
 
 ```text
  Value   Message Type
@@ -61,11 +61,11 @@ But extends it by adding more `options`. This is a variable-width section of the
 
 (2)
 
-A good mnemonic to remember the 'happy-path' for DHCP address assignment is "DORA", as in Discover, Offer, Request, Ack. The free "TCP/IP Guide" has a wonderful visualization of the state machine of DHCP [here](http://www.tcpipguide.com/free/t_DHCPGeneralOperationandClientFiniteStateMachine.htm). It's worth mentioning, because client addresses are unknown at the start of this process, many of the messages are transmitted over UDP broadcast.
+A good mnemonic to remember the 'happy-path' for DHCP address assignment is "DORA", as in Discover, Offer, Request, Ack. The discover/request parts are sent by the client and the other two by the server in response. The free "TCP/IP Guide" has a visualization of the state machine of DHCP [here](http://www.tcpipguide.com/free/t_DHCPGeneralOperationandClientFiniteStateMachine.htm). It's worth mentioning, because client addresses are unknown at the start of this process, many DHCP messages are transmitted over UDP broadcast.
 
 ## Enter DHCPv6
 
-I have worked a lot with DNS, and the DNS response to IPv6 has been to extend the existing protocol to with relevant bits to make everything work (excuse my horrible summation). DHCP did not choose the same path. The protocol has some fundamental assumptions baked in about IPv4. Firstly, the address widths in the header are too small for IPv6, which requires 128 bits instead of 32. Secondly, there is no IPv6 broadcast. As such, it seems like a rethink of DHCP was in order.
+While some protocols like DNS have responded to IPv6 by adding additional record types and extending the protocol, this was not possible with DHCP. The protocol has some fundamental assumptions baked in about IPv4, as best I can tell. Firstly, the address widths in the header are too small for IPv6, which requires 128 bits instead of 32. Secondly, there is no IPv6 broadcast for discovery. Given these, and probably other concerns, a new protocol was created. Here is the header format:
 
 ```text
  0                   1                   2                   3
@@ -82,7 +82,7 @@ I have worked a lot with DNS, and the DNS response to IPv6 has been to extend th
 
 (4)
 
-The message type is the first thing, followed by a transaction ID (though in the authors humble opinion at an oddly sized 3 bytes). What follows is variable width options, which we won't get into here.
+The message type is now first thing, instead of being stuffed in the variable with `options` section, followed by a transaction ID. What follows is variable width options, which we won't get into here. But suffice to say the header format is much simpler, and every message must now have a message type.
 
 The `msg-type` field can have the following possible values:
 
@@ -110,11 +110,11 @@ Value    Message Type
 
 (3)
 
-As you can see the message types here are totally different, but fear not! There is a brand new mnemonic to remember: "SARR". This is again the happy path of address assignment, Solicit, Advertise, Request, Reply. To address the "no broadcast" restriction in IPv6, DHCPv6 uses a dedicated multicast address. There are more complicated things added to the protocol like SLAAC (stateless address auto configuration) but this is well beyond the scope of this post.
+As you can see the message types here are totally different compared to v4, but fear not! There is a new mnemonic to remember: "SARR". This is again the happy path: Solicit, Advertise, Request, Reply. Since IPv6 does not support UDP broadcast, DHCPv6 uses a dedicated multicast address. There are more complicated things in the protocol like SLAAC (stateless address auto configuration) but this is well beyond the scope of this post.
 
 Sources:
 
-- [1](https://www.isc.org/dhcphistory/)
-- [2](https://datatracker.ietf.org/doc/html/rfc2132#section-9.6)
-- [3](http://www.networksorcery.com/enp/protocol/dhcpv6.htm)
-- [4](https://datatracker.ietf.org/doc/html/rfc8415#section-8)
+[1](https://www.isc.org/dhcphistory/)
+[2](https://datatracker.ietf.org/doc/html/rfc2132#section-9.6)
+[3](http://www.networksorcery.com/enp/protocol/dhcpv6.htm)
+[4](https://datatracker.ietf.org/doc/html/rfc8415#section-8)
