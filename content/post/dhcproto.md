@@ -82,7 +82,7 @@ While some protocols like DNS have responded to IPv6 by adding additional record
 
 (4)
 
-The message type is now first thing, instead of being stuffed in the variable with `options` section, followed by a transaction ID. What follows is variable width options, which we won't get into here. But suffice to say the header format is much simpler, and every message must now have a message type.
+The message type is now first thing, instead of being stuffed in the variable width `options` section, followed by a transaction ID. What follows is variable width options, which we won't get into here. But suffice to say the header format is much simpler, and every message must now have a message type.
 
 The `msg-type` field can have the following possible values:
 

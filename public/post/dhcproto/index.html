@@ -264,7 +264,7 @@ if (!doNotTrack) {
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+</code></pre></div>
 <p>(4)</p>
 
-<p>The message type is now first thing, instead of being stuffed in the variable with <code>options</code> section, followed by a transaction ID. What follows is variable width options, which we won&rsquo;t get into here. But suffice to say the header format is much simpler, and every message must now have a message type.</p>
+<p>The message type is now first thing, instead of being stuffed in the variable width <code>options</code> section, followed by a transaction ID. What follows is variable width options, which we won&rsquo;t get into here. But suffice to say the header format is much simpler, and every message must now have a message type.</p>
 
 <p>The <code>msg-type</code> field can have the following possible values:</p>
 <div class="highlight"><pre class="chroma"><code class="language-text" data-lang="text">Value    Message Type
