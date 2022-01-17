@@ -1,12 +1,12 @@
 ---
-title: "A shave of many yaks: unprivileged ICMP in tokio"
+title: "Many yaks to shave: unprivileged ICMP in tokio"
 date: 2022-01-13T22:27:53-05:00
-draft: true
+draft: false
 ---
 
-Happy new year! Thus far I've spent the new year shaving yaks. However, I have been looking at the digression as an opportunity to learn some lesser known internet protocols & more tokio internals. I'll say upfront I'm not an expert on any of the things I'm talking about here, I have only just learned (parts of) them, so if anything looks wrong here contact me so I can correct it.
+A yak shave is also an opportunity to learn. I recently had to a requirement to use some lower level internet procotols I wasn't fully aware of, and as a side benefit, an opportunity to learn a deeper layer of tokio I might not have otherwise interacted with. I'll say upfront I'm not an expert on any of the things I'm talking about here, I have only just learned (parts of) them, so if anything looks wrong contact me so I can correct it.
 
-A while ago I posted about [`dhcproto`](https://leshow.github.io/post/dhcproto/), go back and have a read of that to get some DHCP basics if you like. OK, so when a client is wants to get an IP it sends a DISCOVER message, to which the server replies with an OFFER of a potential IP the client could use. A well behaved DHCP client (and some servers) will send out a ping to an address during this negotiation to see if it's in use. Having overlapping IPs in your network is bad news bears, so we want to do whatever we can to prevent that from happening.
+A while ago I posted about [dhcproto](https://leshow.github.io/post/dhcproto/), go back and have a read to get some DHCP basics if you like. OK, so when a client is wants to get an IP it sends a DISCOVER message, to which the server replies with an OFFER of a potential IP the client could use. A well behaved DHCP client (and some servers) will send out a ping to an address during this negotiation to see if it's in use. Having overlapping IPs in your network is bad news bears, so we want to do whatever we can to prevent that from happening.
 
 Enter ICMP. A ping check is an ICMP echo request & reply that is sent to an IP to see if it's in use and if we can get a reply. It's not perfect, as clients may not respond to pings, and ARP plays a role in duplicate address detection as well.
 
