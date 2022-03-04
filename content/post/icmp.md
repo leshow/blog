@@ -28,7 +28,7 @@ PING 1.1.1.1 (1.1.1.1) 56(84) bytes of data.
 rtt min/avg/max/mdev = 8.140/10.882/15.137/2.624 ms
 ```
 
-Now that we know a little about what we're looking at, we can see `icmp_seq` printed out in the pings! ICMP lives a level below TCP/UDP in the [OSI model](https://en.wikipedia.org/wiki/OSI_model). TCP/UDP are protocols implemented at the "transport layer" while ICMP lives below in layer 3 alongside IP itself. 
+Now that we know a little about what we're looking at, we can see `icmp_seq` printed out in the pings! My eyes glossed over those fields many times before without so much as a second thought. A digression into the [OSI model](https://en.wikipedia.org/wiki/OSI_model) is outside the scope of this post, but suffice to say: most protocols we interact with live either at the transport layer, like TCP/UDP, or at the application layer, like DNS/HTTP. ICMP lives below transport in layer 3 alongside IP itself. 
 
 As such, ICMP messages will get written directly after the IP header, and an echo request/reply take this form: 
 
@@ -44,14 +44,14 @@ As such, ICMP messages will get written directly after the IP header, and an ech
  +-------------------------------+-------------------------------+
 ```
 
-The "type" byte says whether it is an echo reply (0) type message or an echo request (8), there are others but they aren't relevant to ping as far as I know. The checksum is computed based on the other data, while the payload and sequence number are arbitrary, they exist to help you match a reply with a request. Oh, that's another thing, since IMCP lives below the transport layer, there are no ports! The contents of those sequence numbers/payloads are necessary to keep around to figure out which ping you got a response for. This will come up later.
+The "type" byte says whether it is an echo reply (0) type message or an echo request (8), there are others but they aren't relevant to ping as far as I know. The checksum is computed based on the other data, while the payload and sequence number are arbitrary, they exist to help you match a reply with a request. Oh, that's another thing, since IMCP lives below the transport layer, there are no ports! The contents of those sequence numbers/payloads are necessary to figure out which ping you got a response for. This will come up later.
 
 
 ## Yak #2: How do you send something other than TCP/UDP in tokio?
 
-Okay, so now we know a bit about what ICMP is, how do we send a message with tokio? There are no ICMP sockets in the std lib or tokio, they support tcp/udp and unix sockets. Essentially, what we need to do is create a raw socket and then build up our ICMP abstraction on top of that, then have that register with the tokio reactor and write some async/await methods so we can use it.
+Okay, so now we know a bit about what ICMP is, how do we send a message with tokio? There are no ICMP sockets in the std lib or tokio, they support TCP/UDP/unix sockets. Essentially, what we need to do is create a raw socket and then build up our ICMP abstraction on top of that, then have that register with the tokio reactor and write some async/await methods so we can use it.
 
-In C (warning: I don't write a lot of C!), I believe you would use the `socket` method in libc like [this](https://man7.org/linux/man-pages/man2/socket.2.html):
+In C (warning: I don't write a lot of C!), one would use the `socket` syscall [this](https://man7.org/linux/man-pages/man2/socket.2.html) to create an ICMP socket:
 
 ```c 
 int icmp_soc_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)
@@ -126,28 +126,28 @@ impl Socket {
 
 This is mostly lifted from the example in the tokio docs and slightly tweaked. The idea as far as I can tell is that you poll in a loop to see when the resource is readable or writeable, then attempt your operation with `try_io`. `try_io` seems to do the work, but you'll notice you need to `write` it in a loop, because there is a chance the resource could return a `WouldBlock` and this would mean you need to try writing again at a later time. As far as I know, there is no guarantee you've read all there is to read onto the buffer after that `recv` future finishes.
 
-In trying to understand all this, I found reading the relevant `read` and `write` libc man pages to be interesting. It's nothing new to systems programmers, but as someone who interacts with the underlying libc functions it's a good read.
+In trying to understand all this, I found reading the relevant `read` and `write` libc man pages to be interesting. It's nothing new to systems programmers, but as someone who interacts with the underlying libc functions rarely, it's a good read.
 
 ## Yak #3: RAW sockets require privileged access (among other things)
 
 Surprise! using the `SOCK_RAW` socket type requires root privileges or the `cap_net_raw` [capability](https://wiki.archlinux.org/title/Capabilities). Why? Because raw sockets allow you to read _all_ of the data on a particular socket. And remember, at this layer there is no concept of "port" so you could potentially see the data coming in on all ports. For some extra pain, the data you get back over the raw socket hasn't even had its IP header decoded, so when you're parsing ICMP on the reply, you must also parse the IPv4 header!
 
-But this begs the question, how come the `ping` binary doesn't need to be run with `sudo`? Well, it may have setuid permissions on older linux systems, on newer ones it may have the `cap_net_raw` capability. OR apparently, on even newer kernels like mine
+But hold on, we ran `ping` without sudo and it worked just fine, why? Well, it may have setuid permissions on older linux systems, on newer ones it may have the `cap_net_raw` capability. OR apparently, on even newer kernels like mine
 
 ```
 ~
 ❯ getcap /bin/ping
 ```
 
-There are no capabilities required at all? This led me to find this [patch](https://lwn.net/Articles/420800/). I gather that implementing ICMP echo request/reply is fairly common, so kernel devs have given us a mechanism to not have to use the raw socket type and still send ICMP messages! Remember the `socket` libc function?
+There are no capabilities required at all? This led me to find this [patch](https://lwn.net/Articles/420800/). I gather that implementing ICMP echo request/reply is fairly common, so kernel devs have given us a mechanism to not have to use the raw socket type and still send ICMP messages! Remember the `socket` syscall?
 
 ```c
   socket(PF_INET, SOCK_DGRAM, IPPROTO_ICMP)
 ```
 
-If you set its type to `SOCK_DGRAM` instead of `SOCK_RAW` you can create it without special privileges. In this case, you don't need capabilities, or root, or setuid, and you don't need to decode the IPv4 header on the reply... bonus!
+If the type is set to `SOCK_DGRAM` instead of `SOCK_RAW`, it can be created without special privileges. In this case, you don't need capabilities, or root, or setuid, and you don't need to decode the IPv4 header on the reply... bonus!
 
-The kernel will make sure that you can only send ICMP packets with a header type of request or reply, I believe. In the time from this patch, IPv6 and ICMPV6 support have been added for `SOCK_DGRAM`.
+The kernel will make sure that you can only send ICMP packets with a header type of request or reply, I believe. In the time from this patch, ICMPV6 support has been added for `SOCK_DGRAM`.
 
 ## Yak #4: ICMP Identifiers with DGRAM sockets
 
