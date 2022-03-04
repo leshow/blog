@@ -57,7 +57,7 @@ In C (warning: I don't write a lot of C!), one would use the `socket` syscall [t
 int icmp_soc_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)
 ```
 
-In Rust, we've got the lovely `sockets2` crate that is a thin wrapper over this, so it looks like:
+In Rust, we've got the lovely [sockets2](https://docs.rs/socket2/latest/socket2/struct.Socket.html) crate that is a thin wrapper over this. In Rust:
 
 ```rust 
 use sockets2::Socket;
@@ -65,7 +65,7 @@ use sockets2::Socket;
 let soc = Socket::new(Domain::IPV4, Type::RAW, Some(Protocol::ICMPV4))
 ```
 
-What we get from both versions is a file descriptor for the socket, which we can then use to register with tokio. To do that, we need to remember to set it to `non_blocking` since tokio is an async runtime
+What we get is a file descriptor, which we can then use to register with tokio. To do that, we need to remember to set it to `non_blocking` since tokio is an async runtime
 
 ```rust 
 soc.set_nonblocking(true);
