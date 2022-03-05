@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>Many yaks to shave: unprivileged ICMP in tokio</title>
+  <meta property="og:title" content="Many yaks to shave: unprivileged ICMP in tokio" />
+  <meta name="twitter:title" content="Many yaks to shave: unprivileged ICMP in tokio" />
+  <meta name="description" content="A yak shave is also an opportunity to learn. I recently ran into some lower level procotols I wasn&rsquo;t familiar with, this turned into an opportunity to learn a deeper layer of tokio I might not have otherwise interacted with. What follows are fresh learnings, so if anything looks wrong contact me so I can correct it.
+For context, a while ago I posted about dhcproto, go back and have a read to get some DHCP basics if you like.">
+  <meta property="og:description" content="A yak shave is also an opportunity to learn. I recently ran into some lower level procotols I wasn&rsquo;t familiar with, this turned into an opportunity to learn a deeper layer of tokio I might not have otherwise interacted with. What follows are fresh learnings, so if anything looks wrong contact me so I can correct it.
+For context, a while ago I posted about dhcproto, go back and have a read to get some DHCP basics if you like.">
+  <meta name="twitter:description" content="A yak shave is also an opportunity to learn. I recently ran into some lower level procotols I wasn&rsquo;t familiar with, this turned into an opportunity to learn a deeper layer of tokio I might not …">
+  <meta name="author" content="Evan Cameron"/>
+  <link href='https://leshow.github.io/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@evan_cam_" />
+  <meta name="twitter:creator" content="@evan_cam_" />
+  <meta property="og:url" content="https://leshow.github.io/post/icmp/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Esoterically Typed" />
+
+  <meta name="generator" content="Hugo 0.57.2" />
+  <link rel="canonical" href="https://leshow.github.io/post/icmp/" />
+  <link rel="alternate" href="https://leshow.github.io/index.xml" type="application/rss+xml" title="Esoterically Typed">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.css" integrity="sha384-wITovz90syo1dJWVh32uuETPVEtGigN07tkttEqPv+uR2SE/mbQcG7ATL28aI9H0" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://leshow.github.io/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://leshow.github.io/css/highlight.min.css" /><link rel="stylesheet" href="https://leshow.github.io/css/codeblock.css" />
+
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-145420817-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://leshow.github.io">Esoterically Typed</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Blog" href="/">Blog</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    <div class="avatar-container">
+      <div class="avatar-img-border">
+        
+          <a title="Esoterically Typed" href="https://leshow.github.io">
+            <img class="avatar-img" src="https://leshow.github.io/img/avatar-icon.png" alt="Esoterically Typed" />
+          </a>
+        
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+    
+  
+  
+  
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>Many yaks to shave: unprivileged ICMP in tokio</h1>
+                
+                
+                  <span class="post-meta">
+  
+  
+  <i class="fa fa-calendar-o"></i>&nbsp;Posted on January 13, 2022
+  
+  
+  &nbsp;|&nbsp;
+  <i class="fa fa-clock-o"></i> 8 minutes (1650 words)
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        
+
+<p>A yak shave is also an opportunity to learn. I recently ran into some lower level procotols I wasn&rsquo;t familiar with, this turned into an opportunity to learn a deeper layer of tokio I might not have otherwise interacted with. What follows are fresh learnings, so if anything looks wrong contact me so I can correct it.</p>
+
+<p>For context, a while ago I posted about <a href="https://leshow.github.io/post/dhcproto/">dhcproto</a>, go back and have a read to get some DHCP basics if you like. In dhcpv4, when a client wants to get an IP it sends a DISCOVER message, to which the server replies with an OFFER of a potential IP the client could use. A well behaved DHCP client will ARP to see if the IP is in use, while some DHCP servers will send out a ping during this negotiation to see if it&rsquo;s in use. Having IP conflicts on your network is obviously something you want to avoid.</p>
+
+<p>Enter ICMP. A ping uses a protocol called ICMP to communicate with an IP to see if it&rsquo;s in use and if we can get a reply. While it&rsquo;s not perfect, as clients may not respond to pings, it&rsquo;s nice to have the option to ping before an OFFER is sent.</p>
+
+<h2 id="yak-1-icmp-what">Yak #1: ICMP what?</h2>
+
+<p>I&rsquo;ve used the <code>ping</code> binary on Linux hundreds of times without so much as a thought to what it was doing. Turns out, it uses <a href="https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol">ICMP</a> to send an &ldquo;echo request&rdquo; and receive an &ldquo;echo reply&rdquo; type message. You&rsquo;ve likely seen this output before:</p>
+<div class="highlight"><pre class="chroma">~
+❯ ping 1.1.1.1
+PING 1.1.1.1 (1.1.1.1) 56(84) bytes of data.
+64 bytes from 1.1.1.1: icmp_seq=1 ttl=58 time=15.1 ms
+64 bytes from 1.1.1.1: icmp_seq=2 ttl=58 time=10.8 ms
+64 bytes from 1.1.1.1: icmp_seq=3 ttl=58 time=9.50 ms
+64 bytes from 1.1.1.1: icmp_seq=4 ttl=58 time=8.14 ms
+^C
+--- 1.1.1.1 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3004ms
+rtt min/avg/max/mdev = 8.140/10.882/15.137/2.624 ms</pre></div>
+<p>Now that we know a little about what we&rsquo;re looking at, we can see <code>icmp_seq</code> printed out in the pings! My eyes glossed over those fields many times before without so much as a second thought. A digression into the <a href="https://en.wikipedia.org/wiki/OSI_model">OSI model</a> is outside the scope of this post, but suffice to say: most protocols we interact with live either at the transport layer, like TCP/UDP, or at the application layer, like DNS/HTTP. ICMP lives below transport in layer 3 alongside IP itself.</p>
+
+<p>As such, ICMP messages will get written directly after the IP header, and an echo request/reply take this form:</p>
+<div class="highlight"><pre class="chroma"> 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |     type      |    code       |          checksum             |
+ +---------------+---------------+---------------+---------------+
+ |         identifier            |           sequence num        |
+ +-------------------------------+-------------------------------+
+ |                           payload                             |
+ +-------------------------------+-------------------------------+</pre></div>
+<p>The &ldquo;type&rdquo; byte says whether it is an echo reply (0) type message or an echo request (8), there are others but they aren&rsquo;t relevant to ping as far as I know. The checksum is computed based on the other data, while the payload and sequence number are arbitrary, they exist to help you match a reply with a request. Oh, that&rsquo;s another thing, since IMCP lives below the transport layer, there are no ports! The contents of those sequence numbers/payloads are necessary to figure out which ping you got a response for. This will come up later.</p>
+
+<h2 id="yak-2-how-do-you-send-something-other-than-tcp-udp-in-tokio">Yak #2: How do you send something other than TCP/UDP in tokio?</h2>
+
+<p>Okay, so now we know a bit about what ICMP is, how do we send a message with tokio? There are no ICMP sockets in the Rust std lib or tokio, they support TCP/UDP/unix sockets. Essentially, what we need to do is create a raw socket and then build up our ICMP abstraction on top of that, then have that register with the tokio reactor and finally write some async/await methods so we can use it within our larger tokio application.</p>
+
+<p>In C (warning: I don&rsquo;t write a lot of C!), one would use the <code>socket</code> syscall <a href="https://man7.org/linux/man-pages/man2/socket.2.html">this</a> to create an ICMP socket:</p>
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">int</span> <span class="n">icmp_soc_fd</span> <span class="o">=</span> <span class="n">socket</span><span class="p">(</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">SOCK_RAW</span><span class="p">,</span> <span class="n">IPPROTO_ICMP</span><span class="p">)</span></code></pre></div>
+<p>In Rust, we&rsquo;ve got the lovely <a href="https://docs.rs/socket2/latest/socket2/struct.Socket.html">sockets2</a> crate that is a thin wrapper over this. In Rust:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">use</span><span class="w"> </span><span class="n">sockets2</span>::<span class="n">Socket</span><span class="p">;</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="n">soc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Socket</span>::<span class="n">new</span><span class="p">(</span><span class="n">Domain</span>::<span class="n">IPV4</span><span class="p">,</span><span class="w"> </span><span class="n">Type</span>::<span class="n">RAW</span><span class="p">,</span><span class="w"> </span><span class="nb">Some</span><span class="p">(</span><span class="n">Protocol</span>::<span class="n">ICMPV4</span><span class="p">))</span><span class="w">
+</span></code></pre></div>
+<p>What we get is a file descriptor, which we can then use to register with tokio. To do that, we need to remember to set it to <code>non_blocking</code> since tokio is an async runtime</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="n">soc</span><span class="p">.</span><span class="n">set_nonblocking</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span><span class="w">
+</span></code></pre></div>
+<p>But that just gives us a file descriptor that can be polled in a non blocking way, it doesn&rsquo;t give us any async methods to use, tokio needs to know about this file descriptor and it needs to be registered with the tokio reactor so it can know to wake tasks when the socket is ready for data. One way we can do this is by using <a href="https://docs.rs/tokio/latest/tokio/io/unix/struct.AsyncFd.html"><code>AsyncFd</code></a>. This will:</p>
+<div class="highlight"><pre class="chroma">/// Creating an AsyncFd registers the file descriptor with the current tokio
+/// Reactor, allowing you to directly await the file descriptor being readable
+/// or writable. Once registered, the file descriptor remains registered until
+/// the AsyncFd is dropped.</pre></div>
+<p>Perfect! Now we can put that together with <code>sockets2</code></p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">struct</span> <span class="nc">Socket</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">socket</span>: <span class="nc">AsyncFd</span><span class="o">&lt;</span><span class="n">socket2</span>::<span class="n">Socket</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">impl</span><span class="w"> </span><span class="n">Socket</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">new</span><span class="p">()</span><span class="w"> </span>-&gt; <span class="nc">io</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="n">Self</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">socket</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">socket2</span>::<span class="n">Socket</span>::<span class="n">new</span><span class="p">(</span><span class="n">Domain</span>::<span class="n">IPV4</span><span class="p">,</span><span class="w"> </span><span class="n">Type</span>::<span class="n">RAW</span><span class="p">,</span><span class="w"> </span><span class="nb">Some</span><span class="p">(</span><span class="n">Protocol</span>::<span class="n">ICMPV4</span><span class="p">))</span><span class="o">?</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="n">socket</span><span class="p">.</span><span class="n">set_nonblocking</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span><span class="o">?</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="nb">Ok</span><span class="p">(</span><span class="n">Self</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="n">socket</span>: <span class="nc">AsyncFd</span>::<span class="n">new</span><span class="p">(</span><span class="n">socket</span><span class="p">)</span><span class="o">?</span><span class="p">,</span><span class="w">
+</span><span class="w">        </span><span class="p">})</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">async</span><span class="w"> </span><span class="k">fn</span> <span class="nf">send_to</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span>: <span class="kp">&amp;</span><span class="p">[</span><span class="kt">u8</span><span class="p">],</span><span class="w"> </span><span class="n">target</span>: <span class="kp">&amp;</span><span class="nc">SocketAddr</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">io</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="kt">usize</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">loop</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">guard</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">socket</span><span class="p">.</span><span class="n">writable</span><span class="p">().</span><span class="n">await</span><span class="o">?</span><span class="p">;</span><span class="w">
+</span><span class="w">            </span><span class="k">match</span><span class="w"> </span><span class="n">guard</span><span class="p">.</span><span class="n">try_io</span><span class="p">(</span><span class="o">|</span><span class="n">inner</span><span class="o">|</span><span class="w"> </span><span class="n">inner</span><span class="p">.</span><span class="n">get_ref</span><span class="p">().</span><span class="n">send_to</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">SockAddr</span>::<span class="n">from</span><span class="p">(</span><span class="o">*</span><span class="n">target</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">                </span><span class="nb">Ok</span><span class="p">(</span><span class="n">res</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">break</span><span class="w"> </span><span class="n">res</span><span class="o">?</span><span class="p">,</span><span class="w">
+</span><span class="w">                </span><span class="nb">Err</span><span class="p">(</span><span class="n">_would_block</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">continue</span><span class="p">,</span><span class="w">
+</span><span class="w">            </span><span class="p">}</span><span class="w">
+</span><span class="w">        </span><span class="p">};</span><span class="w">
+</span><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">buf</span><span class="p">.</span><span class="n">as_ref</span><span class="p">().</span><span class="n">len</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nb">Err</span><span class="p">(</span><span class="n">io</span>::<span class="n">Error</span>::<span class="n">new</span><span class="p">(</span><span class="w">
+</span><span class="w">                </span><span class="n">io</span>::<span class="n">ErrorKind</span>::<span class="n">Other</span><span class="p">,</span><span class="w">
+</span><span class="w">                </span><span class="s">&#34;failed to send entire packet&#34;</span><span class="p">,</span><span class="w">
+</span><span class="w">            </span><span class="p">));</span><span class="w">
+</span><span class="w">        </span><span class="p">}</span><span class="w">
+</span><span class="w">        </span><span class="nb">Ok</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">async</span><span class="w"> </span><span class="k">fn</span> <span class="nf">recv</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="p">[</span><span class="kt">u8</span><span class="p">])</span><span class="w"> </span>-&gt; <span class="nc">io</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="kt">usize</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="k">loop</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">guard</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">socket</span><span class="p">.</span><span class="n">readable</span><span class="p">().</span><span class="n">await</span><span class="o">?</span><span class="p">;</span><span class="w">
+</span><span class="w">            </span><span class="k">match</span><span class="w"> </span><span class="n">guard</span><span class="p">.</span><span class="n">try_io</span><span class="p">(</span><span class="o">|</span><span class="n">inner</span><span class="o">|</span><span class="w"> </span><span class="n">inner</span><span class="p">.</span><span class="n">get_ref</span><span class="p">().</span><span class="n">read</span><span class="p">(</span><span class="n">buf</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">                </span><span class="nb">Ok</span><span class="p">(</span><span class="n">res</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">res</span><span class="p">,</span><span class="w">
+</span><span class="w">                </span><span class="nb">Err</span><span class="p">(</span><span class="n">_would_block</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">continue</span><span class="p">,</span><span class="w">
+</span><span class="w">            </span><span class="p">}</span><span class="w">
+</span><span class="w">        </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>This is mostly lifted from the example in the tokio docs and slightly tweaked. The idea as far as I can tell is that you poll in a loop to see when the resource is readable or writeable, then attempt your operation with <code>try_io</code>. <code>try_io</code> seems to do the work, but you&rsquo;ll notice you need to <code>write</code> it in a loop, because there is a chance the resource could return a <code>WouldBlock</code> and this would mean you need to try writing again at a later time. As far as I know, there is no guarantee you&rsquo;ve read all there is to read onto the buffer after that <code>recv</code> future finishes.</p>
+
+<p>In trying to understand all this, I found reading the relevant <code>read</code> and <code>write</code> libc man pages to be interesting. It&rsquo;s nothing new to systems programmers, but as someone who interacts with the underlying libc functions rarely, it&rsquo;s a good read.</p>
+
+<h2 id="yak-3-raw-sockets-require-privileged-access-among-other-things">Yak #3: RAW sockets require privileged access (among other things)</h2>
+
+<p>Surprise! using the <code>SOCK_RAW</code> socket type requires root privileges or the <code>cap_net_raw</code> <a href="https://wiki.archlinux.org/title/Capabilities">capability</a>. Why? Because raw sockets allow you to read <em>all</em> of the data on a particular socket. And remember, at this layer there is no concept of &ldquo;port&rdquo; so you could potentially see the data coming in on all ports. For some extra pain, the data you get back over the raw socket hasn&rsquo;t even had its IP header decoded, so when you&rsquo;re parsing ICMP on the reply, you must also parse the IPv4 header!</p>
+
+<p>But hold on, we ran <code>ping</code> without sudo and it worked just fine, why? Well, it may have setuid permissions on older linux systems, on newer ones it may have the <code>cap_net_raw</code> capability. OR apparently, on even newer kernels like mine</p>
+<div class="highlight"><pre class="chroma">~
+❯ getcap /bin/ping</pre></div>
+<p>There are no capabilities required at all? This led me to find this <a href="https://lwn.net/Articles/420800/">patch</a>. I gather that implementing ICMP echo request/reply is fairly common, so kernel devs have given us a mechanism to not have to use the raw socket type and still send ICMP messages! Remember the <code>socket</code> syscall?</p>
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c">  <span class="n">socket</span><span class="p">(</span><span class="n">PF_INET</span><span class="p">,</span> <span class="n">SOCK_DGRAM</span><span class="p">,</span> <span class="n">IPPROTO_ICMP</span><span class="p">)</span></code></pre></div>
+<p>If the type is set to <code>SOCK_DGRAM</code> instead of <code>SOCK_RAW</code>, it can be created without special privileges. In this case, you don&rsquo;t need capabilities, or root, or setuid, and you don&rsquo;t need to decode the IPv4 header on the reply&hellip; bonus!</p>
+
+<p>The kernel will make sure that you can only send ICMP packets with a header type of request or reply, I believe. In the time from this patch, ICMPV6 support has been added for <code>SOCK_DGRAM</code>.</p>
+
+<h2 id="yak-4-icmp-identifiers-with-dgram-sockets">Yak #4: ICMP Identifiers with DGRAM sockets</h2>
+
+<p>Remember how I said the lack of ports would come up later? Well when you use a raw socket, the identifier you write to the socket will be what you get in your response. Using that identifier &amp; sequence number &amp; perhaps payload, you can match up your requests to replies. However, if you use a DGRAM socket, this is not the case:</p>
+<div class="highlight"><pre class="chroma">Message identifiers (octets 4-5 of ICMP header) are interpreted as local
+ports. Addresses are stored in struct sockaddr_in. No port numbers are
+reserved for privileged processes, port 0 is reserved for API (&#34;let the
+kernel pick a free number&#34;). There is no notion of remote ports, remote
+port numbers provided by the user (e.g. in connect()) are ignored.</pre></div>
+<p>What this ended up manifesting itself as in my case was that the random u16 identifier I was generating and writing to the socket was immediately being overwritten by the kernel into something else that more resembled a session id. As a result, I could no longer use it to help match requests to replies on the socket. The end result of this is that I just use the sequence number and the payload as the identifying fields. ICMP replies must contain the same payload as what they received, so there&rsquo;s an arbitrary width block of bytes you can use to match up your requests/replies.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>With a underlying socket type that has async/await methods to send &amp; recv byte buffers, a higher level abstraction that speaks ICMP is fairly easy. I was originally manually encoding/decoding the message (after all it&rsquo;s only a few bytes) but ended up offloading that to <code>pnet_packet</code> which has methods for computing the checksum too. This lets some rather fiddly code get deleted. The <code>pnet</code> family of crates has come in handy more times than I can count.</p>
+
+<p>I&rsquo;m writing this half to share what I&rsquo;ve learned and half so I can read the blog later and remember what I&rsquo;ve forgotten. If you made it this far, thank you!</p>
+
+
+        
+
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://leshow.github.io/post/dhcproto/" data-toggle="tooltip" data-placement="top" title="Introducing: DHCProto">&larr; Previous Post</a>
+            </li>
+          
+          
+        </ul>
+      
+
+
+      
+        
+        
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="mailto:cameron.evan@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://github.com/leshow" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/evan_cam_" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://linkedin.com/in/evan-cameron" title="LinkedIn">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-linkedin fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              <a href="leshow.github.io">Evan Cameron</a>
+            
+          
+
+          &nbsp;&bull;&nbsp;
+          2022
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://leshow.github.io">Esoterically Typed</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.57.2</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.js" integrity="sha384-/y1Nn9+QQAipbNQWU65krzJralCnuOasHncUFXGkdwntGeSvQicrYkiUBwsgUqc1" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/contrib/auto-render.min.js" integrity="sha384-dq1/gEHSxPZQ7DdrM82ID4YVol9BYyU7GbWlIwnwyPzotpoc57wDw/guX8EaYGPx" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/main.js"></script>
+<script src="https://leshow.github.io/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> $(document).ready(function() {$("pre.chroma").css("padding","0");}); </script><script> renderMathInElement(document.body); </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+  </body>
+</html>
+

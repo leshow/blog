@@ -1,7 +1,7 @@
 ---
 title: "Many yaks to shave: unprivileged ICMP in tokio"
-date: 2022-01-13T22:27:53-05:00
-draft: false
+date: 2022-03-06T22:27:53-05:00
+draft: true
 ---
 
 A yak shave is also an opportunity to learn. I recently ran into some lower level procotols I wasn't familiar with, this turned into an opportunity to learn a deeper layer of tokio I might not have otherwise interacted with. What follows are fresh learnings, so if anything looks wrong contact me so I can correct it.
@@ -49,7 +49,7 @@ The "type" byte says whether it is an echo reply (0) type message or an echo req
 
 ## Yak #2: How do you send something other than TCP/UDP in tokio?
 
-Okay, so now we know a bit about what ICMP is, how do we send a message with tokio? There are no ICMP sockets in the std lib or tokio, they support TCP/UDP/unix sockets. Essentially, what we need to do is create a raw socket and then build up our ICMP abstraction on top of that, then have that register with the tokio reactor and write some async/await methods so we can use it.
+Okay, so now we know a bit about what ICMP is, how do we send a message with tokio? There are no ICMP sockets in the Rust std lib or tokio, they support TCP/UDP/unix sockets. Essentially, what we need to do is create a raw socket and then build up our ICMP abstraction on top of that, then have that register with the tokio reactor and finally write some async/await methods so we can use it within our larger tokio application.
 
 In C (warning: I don't write a lot of C!), one would use the `socket` syscall [this](https://man7.org/linux/man-pages/man2/socket.2.html) to create an ICMP socket:
 

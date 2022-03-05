@@ -4,7 +4,7 @@ date: 2021-09-14T14:08:51-04:00
 draft: false
 ---
 
-[`DHCProto`](https://crates.io/crates/dhcproto) is available now on [crates.io](https://crates.io/crates/dhcproto). [`DHCProto`](https://crates.io/crates/dhcproto) implements a parser/encoder for DHCPv4 & DHCPv6. This crate was born out of the dearth of DHCP offerings currently available. It has a comprehensive list of option types implemented, includes serializing a message back to bytes, and DHCPv6. This library was written at my work ([Bluecat](https://bluecatnetworks.com/)), and they have graciously let us open source it, available on [github](https://github.com/bluecatengineering/dhcproto) for issues/comments/PRs. The encoder/decoder traits are inspired a lot by `trust-dns-proto`.
+[`DHCProto`](https://crates.io/crates/dhcproto) is available now on [crates.io](https://crates.io/crates/dhcproto). [`DHCProto`](https://crates.io/crates/dhcproto) implements a parser/encoder for DHCPv4 & DHCPv6. This crate was born out of a lack of DHCP offerings currently available in Rust. It has a comprehensive list of option types implemented, and a fallback variant for options not yet implemented. This library was written at my work ([Bluecat](https://bluecatnetworks.com/)), and they have graciously let us open source it, available on [github](https://github.com/bluecatengineering/dhcproto) for issues/comments/PRs. The encoder/decoder traits are inspired a lot by `trust-dns-proto`.
 
 DHCP is perhaps not the most popular protocol, but never-the-less integral to networks everywhere. We hope to improve the situation marginally by having a high-quality (I hope) library released for everyone to use/contribute to.
 

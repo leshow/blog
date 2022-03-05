@@ -18,7 +18,7 @@
       <pubDate>Tue, 14 Sep 2021 14:08:51 -0400</pubDate>
       <author>cameron.evan@gmail.com (Evan Cameron)</author>
       <guid>https://leshow.github.io/post/dhcproto/</guid>
-      <description>DHCProto is available now on crates.io. DHCProto implements a parser/encoder for DHCPv4 &amp;amp; DHCPv6. This crate was born out of the dearth of DHCP offerings currently available. It has a comprehensive list of option types implemented, includes serializing a message back to bytes, and DHCPv6. This library was written at my work (Bluecat), and they have graciously let us open source it, available on github for issues/comments/PRs. The encoder/decoder traits are inspired a lot by trust-dns-proto.</description>
+      <description>DHCProto is available now on crates.io. DHCProto implements a parser/encoder for DHCPv4 &amp;amp; DHCPv6. This crate was born out of a lack of DHCP offerings currently available in Rust. It has a comprehensive list of option types implemented, and a fallback variant for options not yet implemented. This library was written at my work (Bluecat), and they have graciously let us open source it, available on github for issues/comments/PRs. The encoder/decoder traits are inspired a lot by trust-dns-proto.</description>
     </item>
     
     <item>
