@@ -6,7 +6,7 @@ draft: true
 
 A yak shave is also an opportunity to learn. I recently ran into some lower level procotols I wasn't familiar with, this turned into an opportunity to learn a deeper layer of tokio I might not have otherwise interacted with. What follows are fresh learnings, so if anything looks wrong contact me so I can correct it.
 
-For context, a while ago I posted about [dhcproto](https://leshow.github.io/post/dhcproto/), go back and have a read to get some DHCP basics if you like. In dhcpv4, when a client wants to get an IP it sends a DISCOVER message, to which the server replies with an OFFER of a potential IP the client could use. A well behaved DHCP client will ARP to see if the IP is in use, while some DHCP servers will send out a ping during this negotiation to see if it's in use. Having IP conflicts on your network is obviously something you want to avoid.
+For context, a while ago I posted about [dhcproto](https://leshow.github.io/post/dhcproto/), go back and have a read to get some DHCP basics if you like. In dhcpv4, when a client wants to get an IP it sends a DISCOVER message, to which the server replies with an OFFER of a potential IP the client could use. A well behaved DHCP client will ARP to see if the IP is in use, while some DHCP servers will send out a ping to check also. Having IP conflicts on your network is bad and obviously something you want to avoid.
 
 Enter ICMP. A ping uses a protocol called ICMP to communicate with an IP to see if it's in use and if we can get a reply. While it's not perfect, as clients may not respond to pings, it's nice to have the option to ping before an OFFER is sent.
 
