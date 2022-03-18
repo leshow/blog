@@ -182,4 +182,4 @@ Currently in `dhcpm` there are bindings for discover, request, inform & release,
 
 ## Conclusion
 
-While what I've described in this post might not be banal to some folks, there was something about it that I found exciting and made me want to share. I think there are so many possibilities for this type of a setup where you can embed a scripting language with superpowers provided by Rust into your application.
+While what I've described in this post might be banal to some folks, there was something about it that I found exciting and made me want to share. I think there are so many possibilities for this type of a setup where you can embed a scripting language with superpowers provided by Rust into your application.
