@@ -4,7 +4,7 @@ date: 2022-03-17T14:06:34-04:00
 draft: false
 ---
 
-I've been working on cli tool for a little while called `dhcpm` ("m" for "mock"). It started as a cli tool for constructing & sending arbitrary DHCP messages. I had been looking for a tool that could build various dhcp (mostly v4) messages with different parameters easily, then simply print the responses back so I could inspect its contents.
+I've been working on cli tool for a little while called `dhcpm` ("m" for "mock" - [link](https://github.com/leshow/dhcpm)). It started as a cli tool for constructing & sending arbitrary DHCP messages. I had been looking for a tool that could build various dhcp (mostly v4) messages with different parameters easily, then simply print the responses back so I could inspect its contents.
 
 I discovered that you can use `nmap` scripts for this, and there are a 2 pre-written dhcp scripts in a typical nmap install. For example, to send a discover message:
 
@@ -15,7 +15,6 @@ sudo nmap -sU -p 67 --script=dhcp-discover <target>
 (`U` for UDP, `67` is the default dhcpv4 port, the script we want to run and the IP of the dhcp server)
 
 See [the docs](https://nmap.org/nsedoc/scripts/dhcp-discover.html) for arguments. While this works for basic tests, it didn't have all the features that I wanted out of the box... and I suck at writting lua... and with [dhcproto](https://github.com/bluecatengineering/dhcproto) all I really had to do was generate a cli parser from a struct and write some bytes to a UDP socket. So, while nmap is super flexible, I do still feel there is room for a tool focused just on DHCP.
-
 
 ## CLI
 
@@ -64,7 +63,7 @@ Commands:
 There are some base parameters that tell the tool which ports to bind to, the target, etc, there are even `output` options to tell `tracing` to log structured JSON or more readable logs. The meat of it are the subcommands for each of the dhcpv4 message types, with DHCPv6 is unfinished at the moment. Subcommands each have their own parameters:
 
 ```
-> dhcpm 0.0.0.0 discover --help 
+> dhcpm 0.0.0.0 discover --help
 
 Send a DISCOVER msg
 
@@ -130,6 +129,7 @@ engine
 ```
 
 And using it in rhai:
+
 ```
 let args = discover::args_default();
 args.ciaddr = "1.2.3.4";
@@ -138,7 +138,7 @@ print(args)
 
 This made it all fairly mechanical to expose the different configuration structs to rhai so that they could be created and modified inside the script. The next issue was, how will I get rhai to actually send the dhcp message that can be built from these arguments?
 
-`dhcpm` is a simple tool, at startup it creates one `Arc<UdpSocket>` and two threads, one to `recv` and one `send`. These are complemented by a pair of channels so provide some scallfolding for the message runner. 
+`dhcpm` is a simple tool, at startup it creates one `Arc<UdpSocket>` and two threads, one to `recv` and one `send`. These are complemented by a pair of channels so provide some scallfolding for the message runner.
 
 ```
 // messages put on `send_tx` will go out on the socket
@@ -183,4 +183,3 @@ Currently in `dhcpm` there are bindings for discover, request, inform & release,
 ## Conclusion
 
 While what I've described in this post might not be banal to some folks, there was something about it that I found exciting and made me want to share. I think there are so many possibilities for this type of a setup where you can embed a scripting language with superpowers provided by Rust into your application.
-

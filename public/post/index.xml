@@ -18,7 +18,7 @@
       <pubDate>Thu, 17 Mar 2022 14:06:34 -0400</pubDate>
       <author>cameron.evan@gmail.com (Evan Cameron)</author>
       <guid>https://leshow.github.io/post/dhcpm/</guid>
-      <description>I&amp;rsquo;ve been working on cli tool for a little while called dhcpm (&amp;ldquo;m&amp;rdquo; for &amp;ldquo;mock&amp;rdquo;). It started as a cli tool for constructing &amp;amp; sending arbitrary DHCP messages. I had been looking for a tool that could build various dhcp (mostly v4) messages with different parameters easily, then simply print the responses back so I could inspect its contents.
+      <description>I&amp;rsquo;ve been working on cli tool for a little while called dhcpm (&amp;ldquo;m&amp;rdquo; for &amp;ldquo;mock&amp;rdquo; - link). It started as a cli tool for constructing &amp;amp; sending arbitrary DHCP messages. I had been looking for a tool that could build various dhcp (mostly v4) messages with different parameters easily, then simply print the responses back so I could inspect its contents.
 I discovered that you can use nmap scripts for this, and there are a 2 pre-written dhcp scripts in a typical nmap install.</description>
     </item>
     
