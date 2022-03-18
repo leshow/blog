@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>Rust superpowered DHCP cli with rhai scripts</title>
+  <meta property="og:title" content="Rust superpowered DHCP cli with rhai scripts" />
+  <meta name="twitter:title" content="Rust superpowered DHCP cli with rhai scripts" />
+  <meta name="description" content="I&rsquo;ve been working on cli tool for a little while called dhcpm (&ldquo;m&rdquo; for &ldquo;mock&rdquo;). It started as a cli tool for constructing &amp; sending arbitrary DHCP messages. I had been looking for a tool that could build various dhcp (mostly v4) messages with different parameters easily, then simply print the responses back so I could inspect its contents.
+I discovered that you can use nmap scripts for this, and there are a 2 pre-written dhcp scripts in a typical nmap install.">
+  <meta property="og:description" content="I&rsquo;ve been working on cli tool for a little while called dhcpm (&ldquo;m&rdquo; for &ldquo;mock&rdquo;). It started as a cli tool for constructing &amp; sending arbitrary DHCP messages. I had been looking for a tool that could build various dhcp (mostly v4) messages with different parameters easily, then simply print the responses back so I could inspect its contents.
+I discovered that you can use nmap scripts for this, and there are a 2 pre-written dhcp scripts in a typical nmap install.">
+  <meta name="twitter:description" content="I&rsquo;ve been working on cli tool for a little while called dhcpm (&ldquo;m&rdquo; for &ldquo;mock&rdquo;). It started as a cli tool for constructing &amp; sending arbitrary DHCP messages. I had …">
+  <meta name="author" content="Evan Cameron"/>
+  <link href='https://leshow.github.io/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@evan_cam_" />
+  <meta name="twitter:creator" content="@evan_cam_" />
+  <meta property="og:url" content="https://leshow.github.io/post/dhcpm/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Esoterically Typed" />
+
+  <meta name="generator" content="Hugo 0.57.2" />
+  <link rel="canonical" href="https://leshow.github.io/post/dhcpm/" />
+  <link rel="alternate" href="https://leshow.github.io/index.xml" type="application/rss+xml" title="Esoterically Typed">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.css" integrity="sha384-wITovz90syo1dJWVh32uuETPVEtGigN07tkttEqPv+uR2SE/mbQcG7ATL28aI9H0" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://leshow.github.io/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://leshow.github.io/css/highlight.min.css" /><link rel="stylesheet" href="https://leshow.github.io/css/codeblock.css" />
+
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-145420817-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://leshow.github.io">Esoterically Typed</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Blog" href="/">Blog</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    <div class="avatar-container">
+      <div class="avatar-img-border">
+        
+          <a title="Esoterically Typed" href="https://leshow.github.io">
+            <img class="avatar-img" src="https://leshow.github.io/img/avatar-icon.png" alt="Esoterically Typed" />
+          </a>
+        
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+    
+  
+  
+  
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>Rust superpowered DHCP cli with rhai scripts</h1>
+                
+                
+                  <span class="post-meta">
+  
+  
+  <i class="fa fa-calendar-o"></i>&nbsp;Posted on March 17, 2022
+  
+  
+  &nbsp;|&nbsp;
+  <i class="fa fa-clock-o"></i> 7 minutes (1456 words)
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        
+
+<p>I&rsquo;ve been working on cli tool for a little while called <code>dhcpm</code> (&ldquo;m&rdquo; for &ldquo;mock&rdquo;). It started as a cli tool for constructing &amp; sending arbitrary DHCP messages. I had been looking for a tool that could build various dhcp (mostly v4) messages with different parameters easily, then simply print the responses back so I could inspect its contents.</p>
+
+<p>I discovered that you can use <code>nmap</code> scripts for this, and there are a 2 pre-written dhcp scripts in a typical nmap install. For example, to send a discover message:</p>
+<div class="highlight"><pre class="chroma">sudo nmap -sU -p 67 --script=dhcp-discover &lt;target&gt;</pre></div>
+<p>(<code>U</code> for UDP, <code>67</code> is the default dhcpv4 port, the script we want to run and the IP of the dhcp server)</p>
+
+<p>See <a href="https://nmap.org/nsedoc/scripts/dhcp-discover.html">the docs</a> for arguments. While this works for basic tests, it didn&rsquo;t have all the features that I wanted out of the box&hellip; and I suck at writting lua&hellip; and with <a href="https://github.com/bluecatengineering/dhcproto">dhcproto</a> all I really had to do was generate a cli parser from a struct and write some bytes to a UDP socket. So, while nmap is super flexible, I do still feel there is room for a tool focused just on DHCP.</p>
+
+<h2 id="cli">CLI</h2>
+
+<p>Hacking something workable came together pretty quickly, <code>dhcpm</code> currently looks like this:</p>
+<div class="highlight"><pre class="chroma">&gt; dhcpm --help
+
+Usage: dhcpm &lt;target&gt; [-b &lt;bind&gt;] [-p &lt;port&gt;] [-t &lt;timeout&gt;] [--output &lt;output&gt;] [--script &lt;script&gt;] [--no-retry &lt;no-retry&gt;] [&lt;command&gt;] [&lt;args&gt;]
+
+dhcpm is a cli tool for sending dhcpv4/v6 messages
+
+ex  dhcpv4:
+        dhcpm 0.0.0.0 -p 9901 discover  (unicast discover to 0.0.0.0:9901)
+        dhcpm 255.255.255.255 discover (broadcast discover to default dhcp port)
+        dhcpm 192.168.0.1 dora (unicast DORA to 192.168.0.1)
+        dhcpm 192.168.0.1 dora -o 118,C0A80001 (unicast DORA, incl opt 118:192.168.0.1)
+    dhcpv6:
+        dhcpm ::0 -p 9901 solicit       (unicast solicit to [::0]:9901)
+        dhcpm ff02::1:2 solicit         (multicast solicit to default port)
+
+Positional Arguments:
+  target            ip address to send to
+
+Options:
+  -b, --bind        address to bind to [default: INADDR_ANY:0]
+  -p, --port        which port use. [default: 67 (v4) or 546 (v6)]
+  -t, --timeout     query timeout in seconds [default: 5]
+  --output          select the log output format (json|pretty|debug) [default: pretty]
+  --script          pass in a path to a rhai script
+                    (https://github.com/rhaiscript/rhai) NOTE: must compile
+                    dhcpm with `script` feature
+  --no-retry        setting to &#34;true&#34; will prevent re-sending if we don&#39;t get a
+                    response [default: false]
+  --help            display usage information
+
+Commands:
+  discover          Send a DISCOVER msg
+  request           Send a REQUEST msg
+  release           Send a RELEASE msg
+  inform            Send an INFORM msg
+  dora              Sends Discover then Request
+  solicit           Send a SOLICIT msg (dhcpv6)</pre></div>
+<p>There are some base parameters that tell the tool which ports to bind to, the target, etc, there are even <code>output</code> options to tell <code>tracing</code> to log structured JSON or more readable logs. The meat of it are the subcommands for each of the dhcpv4 message types, with DHCPv6 is unfinished at the moment. Subcommands each have their own parameters:</p>
+<div class="highlight"><pre class="chroma">&gt; dhcpm 0.0.0.0 discover --help 
+
+Send a DISCOVER msg
+
+Options:
+  -c, --chaddr      supply a mac address for DHCPv4 [default: first avail mac]
+  --ciaddr          address of client [default: None]
+  -r, --req-addr    request specific ip [default: None]
+  -g, --giaddr      giaddr [default: 0.0.0.0]
+  --subnet-select   subnet selection opt 118 [default: None]
+  --relay-link      relay link select opt 82 subopt 5 [default: None]
+  -o, --opt         add opts to the message [ex: these are equivalent-
+                    &#34;118,hex,C0A80001&#34; or &#34;118,ip,192.168.0.1&#34;]
+  --params          params to include: [default: 1,3,6,15 (Subnet, Router,
+                    DnsServer, DomainName]
+  --help            display usage information</pre></div>
+<p>With this arbitrary DHCP options can be set with hex or an ip string (ex. <code>--opt 118,ip,192.168.0.1</code>), we can change some IPs in the header like <code>giaddr</code>/<code>ciaddr</code>, the hardware address (<code>chaddr</code>), etc. This was great for quick testing with different parameters. But what about nmap&rsquo;s scripting engine? While you can use <code>dhcpm</code> inside a shell script, sometimes that can be a bit unwieldy when we&rsquo;re talking about poking into a text formatted DHCP message to pull out fields to pass to subsequent runs. It would be cool to have a mini scripting engine to edit scripts on the fly, change a couple parameters on what might be a chain of several messages and re-run.</p>
+
+<h2 id="scripting">Scripting</h2>
+
+<p>At this point I stumbled on <a href="https://github.com/rhaiscript/rhai">rhai</a>, an embedded scripting environment for Rust. What attracted me to it was after looking at the code examples, it seemed like I already &ldquo;knew&rdquo; rhai. It looks much less foreign to me than lua. It&rsquo;s basically Rust with dynamic types, and it has a well documented <a href="https://rhai.rs/book/">book</a> with some good examples of how to integrate with a Rust application. Let&rsquo;s take a look at the integration with <code>dhcpm</code>.</p>
+
+<p>In <code>rhai</code> you can create a new <a href="https://docs.rs/rhai/latest/rhai/struct.Engine.html">Engine</a> that can do things like call <code>engine.eval::&lt;T&gt;(&quot;1 + 2&quot;)</code>. What&rsquo;s passed will be executed by <code>rhai</code> and have its result returned. On other hand, you can pass a path to the engine and execute an entire script. This is what <code>dhcpm</code> does with the path provided through the cli.</p>
+
+<p>Rhai also provides a robust set of macros for providing Rust code to the running script</p>
+<div class="highlight"><pre class="chroma">#[export_module]
+pub mod discover_mod {
+    use tracing::trace;
+    #[rhai_fn()]
+    pub fn args_default() -&gt; DiscoverArgs {
+        DiscoverArgs::default()
+    }
+    #[rhai_fn(global, name = &#34;to_string&#34;, name = &#34;to_debug&#34;, pure)]
+    pub fn to_string(args: &amp;mut DiscoverArgs) -&gt; String {
+        format!(&#34;{:?}&#34;, args)
+    }
+    // ciaddr
+    #[rhai_fn(global, get = &#34;ciaddr&#34;, pure)]
+    pub fn get_ciaddr(args: &amp;mut DiscoverArgs) -&gt; String {
+        args.ciaddr.to_string()
+    }
+    #[rhai_fn(global, set = &#34;ciaddr&#34;)]
+    pub fn set_ciaddr(args: &amp;mut DiscoverArgs, ciaddr: &amp;str) {
+        trace!(?ciaddr, &#34;setting ciaddr&#34;);
+        args.ciaddr = ciaddr.parse::&lt;Ipv4Addr&gt;().expect(&#34;failed to parse ciaddr&#34;);
+    }
+    ...
+}</pre></div>
+<p>I think of this like an FFI, we&rsquo;re generating bindings for rhai to use. Some things to note, <code>rhai</code> can have any valid Rust type in functions exposed to it, although it looks to me like anything that is a custom type needs to have any variants/methods/etc explicitly exposed for it to be useful in rhai. Notice also that rhai&rsquo;s first paramater takes by <code>&amp;mut Thing</code>. All methods can mutate; this is a scripting language after all. In any case, this can be <code>registered</code> with the <code>Engine</code></p>
+<div class="highlight"><pre class="chroma">engine
+    .register_type_with_name::&lt;DiscoverArgs&gt;(&#34;DiscoverArgs&#34;)
+    .register_static_module(
+        &#34;discover&#34;,
+        exported_module!(crate::discover::discover_mod).into(),
+    );</pre></div>
+<p>And using it in rhai:</p>
+<div class="highlight"><pre class="chroma">let args = discover::args_default();
+args.ciaddr = &#34;1.2.3.4&#34;;
+print(args)</pre></div>
+<p>This made it all fairly mechanical to expose the different configuration structs to rhai so that they could be created and modified inside the script. The next issue was, how will I get rhai to actually send the dhcp message that can be built from these arguments?</p>
+
+<p><code>dhcpm</code> is a simple tool, at startup it creates one <code>Arc&lt;UdpSocket&gt;</code> and two threads, one to <code>recv</code> and one <code>send</code>. These are complemented by a pair of channels so provide some scallfolding for the message runner.</p>
+<div class="highlight"><pre class="chroma">// messages put on `send_tx` will go out on the socket
+let (send_tx, send_rx) = crossbeam_channel::bounded(1);
+// messages coming from `recv_rx` were received from the socket
+let (recv_tx, recv_rx) = crossbeam_channel::bounded(1);
+
+runner::sender_thread(send_rx, soc.clone());
+runner::recv_thread(recv_tx, soc);</pre></div>
+<p><code>send_tx</code> will put any dhcp messages sent to it on the socket. <code>recv_rx</code> will be forwarded any any messages we read from the socket, however there can only be one reading at a time, otherwise we won&rsquo;t know which message is meant for which receiver. These channels passed into <code>TimeoutRunner</code> when it is initialized which I won&rsquo;t post the code for, but suffice to say it sends a messages and exits with an error if there is no reply within a certain time period or if we get a <code>SIGINT</code>.</p>
+
+<p>For creating a rhai binding to this, initially I didn&rsquo;t understand how that would work. What&rsquo;s needed is a function that will take the <code>DiscoverArgs</code> and an already initialized value (of type <code>TimeoutRunner</code>), but one provided from the Rust environment, not the script. However, with function macros I showed before, all parameters were provided by Rhai, there is no way to pass in an already initialized variable.</p>
+
+<p>I initially thought of using something like <code>Lazy</code> or <code>OnceCell</code> and putting <code>TimeoutRunner</code> there, but it didn&rsquo;t feel right. Eventually, I stumbled over closure bindings for <code>engine</code> and that appeared to solve this problem.</p>
+<div class="highlight"><pre class="chroma">let run = runner.clone();
+...
+engine.register_fn(&#34;send&#34;, {
+    move |args: &amp;mut DiscoverArgs| {
+        let mut new_runner = run.clone();
+        // replace runner args so it knows which message type to run
+        new_runner.args.msg = Some(MsgType::Discover(args.clone()));
+        new_runner.send().expect(&#34;runner failed&#34;).unwrap_v4()
+    }
+})</pre></div>
+<p>This will attach the method <code>send</code> on <code>DiscoverArgs</code> allowing the script to use it like this:</p>
+<div class="highlight"><pre class="chroma">let args = discover::args_default();
+args.ciaddr = &#34;1.2.3.4&#34;;
+print(args);
+let msg = args.send();</pre></div>
+<p>Currently in <code>dhcpm</code> there are bindings for discover, request, inform &amp; release, and getters/setters for each, allowing one to script the full DORA negotiation for an IP with custom fields for each.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>While what I&rsquo;ve described in this post might not be banal to some folks, there was something about it that I found exciting and made me want to share. I think there are so many possibilities for this type of a setup where you can embed a scripting language with superpowers provided by Rust into your application.</p>
+
+
+        
+
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://leshow.github.io/post/dhcproto/" data-toggle="tooltip" data-placement="top" title="Introducing: DHCProto">&larr; Previous Post</a>
+            </li>
+          
+          
+        </ul>
+      
+
+
+      
+        
+        
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="mailto:cameron.evan@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://github.com/leshow" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/evan_cam_" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://linkedin.com/in/evan-cameron" title="LinkedIn">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-linkedin fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              <a href="leshow.github.io">Evan Cameron</a>
+            
+          
+
+          &nbsp;&bull;&nbsp;
+          2022
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://leshow.github.io">Esoterically Typed</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.57.2</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.js" integrity="sha384-/y1Nn9+QQAipbNQWU65krzJralCnuOasHncUFXGkdwntGeSvQicrYkiUBwsgUqc1" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/contrib/auto-render.min.js" integrity="sha384-dq1/gEHSxPZQ7DdrM82ID4YVol9BYyU7GbWlIwnwyPzotpoc57wDw/guX8EaYGPx" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/main.js"></script>
+<script src="https://leshow.github.io/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> $(document).ready(function() {$("pre.chroma").css("padding","0");}); </script><script> renderMathInElement(document.body); </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+  </body>
+</html>
+
