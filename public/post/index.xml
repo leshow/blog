@@ -7,10 +7,20 @@
     <generator>Hugo -- gohugo.io</generator>
     <managingEditor>cameron.evan@gmail.com (Evan Cameron)</managingEditor>
     <webMaster>cameron.evan@gmail.com (Evan Cameron)</webMaster>
-    <lastBuildDate>Thu, 17 Mar 2022 14:06:34 -0400</lastBuildDate>
+    <lastBuildDate>Wed, 16 Nov 2022 00:13:15 -0400</lastBuildDate>
     
 	<atom:link href="https://leshow.github.io/post/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>ARP Injection in Rust on Linux</title>
+      <link>https://leshow.github.io/post/linux_arp_injection/</link>
+      <pubDate>Wed, 16 Nov 2022 00:13:15 -0400</pubDate>
+      <author>cameron.evan@gmail.com (Evan Cameron)</author>
+      <guid>https://leshow.github.io/post/linux_arp_injection/</guid>
+      <description>Don&amp;rsquo;t ask why, but I had to learn about this a while ago and had been meaning to write it down.
+ARP is Address Resolution Protocol, it is a layer 2 protocol used in local IPv4 networks for discovering a MAC address for a given IP. Say you want to send a packet to an IP on your local network, 192.168.0.136. The ethernet frame requires a destination MAC address, but you don&amp;rsquo;t know what it is yet.</description>
+    </item>
     
     <item>
       <title>Rust superpowered DHCP cli with rhai scripts</title>

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>ARP Injection in Rust on Linux</title>
+  <meta property="og:title" content="ARP Injection in Rust on Linux" />
+  <meta name="twitter:title" content="ARP Injection in Rust on Linux" />
+  <meta name="description" content="Don&rsquo;t ask why, but I had to learn about this a while ago and had been meaning to write it down.
+ARP is Address Resolution Protocol, it is a layer 2 protocol used in local IPv4 networks for discovering a MAC address for a given IP. Say you want to send a packet to an IP on your local network, 192.168.0.136. The ethernet frame requires a destination MAC address, but you don&rsquo;t know what it is yet.">
+  <meta property="og:description" content="Don&rsquo;t ask why, but I had to learn about this a while ago and had been meaning to write it down.
+ARP is Address Resolution Protocol, it is a layer 2 protocol used in local IPv4 networks for discovering a MAC address for a given IP. Say you want to send a packet to an IP on your local network, 192.168.0.136. The ethernet frame requires a destination MAC address, but you don&rsquo;t know what it is yet.">
+  <meta name="twitter:description" content="Don&rsquo;t ask why, but I had to learn about this a while ago and had been meaning to write it down.
+ARP is Address Resolution Protocol, it is a layer 2 protocol used in local IPv4 networks for …">
+  <meta name="author" content="Evan Cameron"/>
+  <link href='https://leshow.github.io/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:image" content="https://leshow.github.io/img/avatar-icon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@evan_cam_" />
+  <meta name="twitter:creator" content="@evan_cam_" />
+  <meta property="og:url" content="https://leshow.github.io/post/linux_arp_injection/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Esoterically Typed" />
+
+  <meta name="generator" content="Hugo 0.57.2" />
+  <link rel="canonical" href="https://leshow.github.io/post/linux_arp_injection/" />
+  <link rel="alternate" href="https://leshow.github.io/index.xml" type="application/rss+xml" title="Esoterically Typed">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.css" integrity="sha384-wITovz90syo1dJWVh32uuETPVEtGigN07tkttEqPv+uR2SE/mbQcG7ATL28aI9H0" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://leshow.github.io/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="https://leshow.github.io/css/highlight.min.css" /><link rel="stylesheet" href="https://leshow.github.io/css/codeblock.css" />
+
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-145420817-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</head>
+
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://leshow.github.io">Esoterically Typed</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Blog" href="/">Blog</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    <div class="avatar-container">
+      <div class="avatar-img-border">
+        
+          <a title="Esoterically Typed" href="https://leshow.github.io">
+            <img class="avatar-img" src="https://leshow.github.io/img/avatar-icon.png" alt="Esoterically Typed" />
+          </a>
+        
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+
+
+    
+  
+  
+  
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              <h1>ARP Injection in Rust on Linux</h1>
+                
+                
+                  <span class="post-meta">
+  
+  
+  <i class="fa fa-calendar-o"></i>&nbsp;Posted on November 16, 2022
+  
+  
+  &nbsp;|&nbsp;
+  <i class="fa fa-clock-o"></i> 5 minutes (1057 words)
+  
+  
+</span>
+
+
+                
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        
+
+<p>Don&rsquo;t ask why, but I had to learn about this a while ago and had been meaning to write it down.</p>
+
+<p>ARP is <a href="https://en.wikipedia.org/wiki/Address_Resolution_Protocol">Address Resolution Protocol</a>, it is a layer 2 protocol used in local IPv4 networks for discovering a MAC address for a given IP. Say you want to send a packet to an IP on your local network, <code>192.168.0.136</code>. The ethernet frame requires a destination MAC address, but you don&rsquo;t know what it is yet. This is discovered either from the local routing table or by ARP. If your routing table doesn&rsquo;t contain <code>192.168.0.136</code>, an ARP broadcast (where the destination MAC is set to FF:FF:FF:FF:FF:FF) is sent. <code>192.168.0.136</code> would then respond via ARP unicast with its MAC &amp; IP. This entry can be added to the cache for future use.</p>
+
+<p>Typically, clients will do an ARP broadcast when their IP or MAC changes so other hosts on the network can update their internal mapping of IP to MAC. This all changed in IPv6, v6 networks don&rsquo;t use ARP in favor of Neighbor Discovery Protocol (NDP), part of ICMPv6.</p>
+
+<p>Fun fact, you can check out your ARP cache on Linux by running <code>cat /proc/net/arp</code>:</p>
+<div class="highlight"><pre class="chroma">IP address       HW type     Flags       HW address            Mask     Device
+192.168.0.136    0x1         0x2         xx:xx:xx:xx:xx:xx     *        enp6s0
+192.168.0.1      0x1         0x2         xx:xx:xx:xx:xx:xx     *        enp6s0</pre></div>
+<h2 id="stumbling-through-c">Stumbling through C</h2>
+
+<p>This all began after I stumbled on a bit of code when looking through the source for <code>dnsmasq</code>. A DHCP server has a unique case being the thing that assigns IPs to devices on a network. Without going into too much detail, sometimes a server will want to unicast a response back to a particular client before the IP has been fully assigned. Meaning the server has both the destination IP and MAC, but the routing table doesn&rsquo;t have that information yet. In this case the server can inject the entry into the table before sending the packet via unicast.</p>
+
+<p>As a sidenote, I think there is another way for the DHCP server to do this where it constructs the raw ethernet frame with the MAC included instead of injecting into the cache, but don&rsquo;t take that to the bank. Here is the snippet from <code>dnsmasq</code>:</p>
+<div class="highlight"><pre class="chroma"><code class="language-C" data-lang="C">	<span class="cm">/* unicast to unconfigured client. Inject mac address direct into ARP cache.
+</span><span class="cm">	struct sockaddr limits size to 14 bytes. */</span>
+	<span class="n">dest</span><span class="p">.</span><span class="n">sin_addr</span> <span class="o">=</span> <span class="n">mess</span><span class="o">-&gt;</span><span class="n">yiaddr</span><span class="p">;</span>
+	<span class="n">dest</span><span class="p">.</span><span class="n">sin_port</span> <span class="o">=</span> <span class="n">htons</span><span class="p">(</span><span class="n">daemon</span><span class="o">-&gt;</span><span class="n">dhcp_client_port</span><span class="p">);</span>
+
+	<span class="n">memcpy</span><span class="p">(</span><span class="o">&amp;</span><span class="n">arp_req</span><span class="p">.</span><span class="n">arp_pa</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">dest</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="n">sockaddr_in</span><span class="p">));</span>
+
+	<span class="n">arp_req</span><span class="p">.</span><span class="n">arp_ha</span><span class="p">.</span><span class="n">sa_family</span> <span class="o">=</span> <span class="n">mess</span><span class="o">-&gt;</span><span class="n">htype</span><span class="p">;</span>
+
+	<span class="n">memcpy</span><span class="p">(</span><span class="n">arp_req</span><span class="p">.</span><span class="n">arp_ha</span><span class="p">.</span><span class="n">sa_data</span><span class="p">,</span> <span class="n">mess</span><span class="o">-&gt;</span><span class="n">chaddr</span><span class="p">,</span> <span class="n">mess</span><span class="o">-&gt;</span><span class="n">hlen</span><span class="p">);</span>
+
+	<span class="cm">/* interface name already copied in */</span>
+	<span class="n">arp_req</span><span class="p">.</span><span class="n">arp_flags</span> <span class="o">=</span> <span class="n">ATF_COM</span><span class="p">;</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">ioctl</span><span class="p">(</span><span class="n">daemon</span><span class="o">-&gt;</span><span class="n">dhcpfd</span><span class="p">,</span> <span class="n">SIOCSARP</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">arp_req</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+	<span class="n">my_syslog</span><span class="p">(</span><span class="n">MS_DHCP</span> <span class="o">|</span> <span class="n">LOG_ERR</span><span class="p">,</span> <span class="n">_</span><span class="p">(</span><span class="s">&#34;ARP-cache injection failed: %s&#34;</span><span class="p">),</span> <span class="n">strerror</span><span class="p">(</span><span class="n">errno</span><span class="p">));</span></code></pre></div>
+<p><a href="https://github.com/imp/dnsmasq/blob/770bce967cfc9967273d0acfb3ea018fb7b17522/src/dhcp.c#L419">here</a></p>
+
+<p>Pretty dense, but we can learn some interesting things from this. The code puts the destination IP and port in the <code>arp_pa</code> field of <code>arp_req</code>, it sets the hardware type (<code>mess-&gt;htype</code> will likely be the code for &ldquo;Ethernet&rdquo; in this case), it sets the MAC (<code>mess-&gt;chaddr</code>) and a flag <code>ATF_COM</code> (stands for &ldquo;Lookup complete&rdquo;, apparently). Finally, it uses the syscall <code>ioctl</code> passing the <code>SIOCSARP</code> parameter with a file descriptor for a socket and a pointer to the struct.</p>
+
+<p><code>ioctl</code> stands for &ldquo;i/o control&rdquo;. It&rsquo;s kind of a grab-bag syscall that does a lot of stuff depending on its params. I found the shape of <code>arp_req</code> by looking up the <code>arp</code> linux module <a href="https://manpages.courier-mta.org/htmlman7/arp.7.html">here</a></p>
+<div class="highlight"><pre class="chroma"><code class="language-C" data-lang="C"><span class="k">struct</span> <span class="n">arpreq</span> <span class="p">{</span>
+	<span class="k">struct</span> <span class="n">sockaddr</span> <span class="n">arp_pa</span><span class="p">;</span>
+	<span class="cm">/* protocol address */</span>
+	<span class="k">struct</span> <span class="n">sockaddr</span> <span class="n">arp_ha</span><span class="p">;</span>
+	<span class="cm">/* hardware address */</span>
+	<span class="kt">int</span> <span class="n">arp_flags</span><span class="p">;</span>
+	<span class="cm">/* flags */</span>
+	<span class="k">struct</span> <span class="n">sockaddr</span> <span class="n">arp_netmask</span><span class="p">;</span>
+	<span class="cm">/* netmask of protocol address */</span>
+	<span class="kt">char</span> <span class="n">arp_dev</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
+<span class="p">};</span></code></pre></div>
+<p>And right below that:</p>
+
+<blockquote>
+<p>SIOCSARP, SIOCDARP and SIOCGARP respectively set, delete, and get an ARP mapping. Setting and deleting ARP maps are privileged operations and may be performed only by a process with the CAP_NET_ADMIN capability or an effective UID of 0.</p>
+</blockquote>
+
+<p>There&rsquo;s a command to modify the arp cache on linux aptly named <code>arp</code>, which I believe was supplanted later by <code>ip neigh</code> because the latter works with ipv6 also. In any case, the source for the original <code>arp</code> uses <code>ioctl</code> similarly to <code>dnsmasq</code> to add entries. <a href="https://github.com/ecki/net-tools/blob/master/arp.c#L266">Source here</a> and you can try <code>arp -s 192.168.0.1 -i ethX xx:x:xx:xx:xx:xx</code> to add an entry, <code>arp -d 192.168.0.1</code> deletes. Under the hood, these both run <code>ioctl(fd, SIOCSARP, &amp;arp_req)</code> &amp; <code>ioctl(fd, SIOCDARP, &amp;arp_req)</code>, respectively.</p>
+
+<p>So all that code is really just calling &ldquo;set&rdquo; with a specific IP:port for the ARP cache.</p>
+
+<h2 id="in-rust">In Rust</h2>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">struct</span> <span class="nc">arpreq</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">	</span><span class="k">pub</span><span class="w"> </span><span class="n">arp_pa</span>: ::<span class="n">sockaddr</span><span class="p">,</span><span class="w">
+</span><span class="w">	</span><span class="k">pub</span><span class="w"> </span><span class="n">arp_ha</span>: ::<span class="n">sockaddr</span><span class="p">,</span><span class="w">
+</span><span class="w">	</span><span class="k">pub</span><span class="w"> </span><span class="n">arp_flags</span>: ::<span class="n">c_int</span><span class="p">,</span><span class="w">
+</span><span class="w">	</span><span class="k">pub</span><span class="w"> </span><span class="n">arp_netmask</span>: ::<span class="n">sockaddr</span><span class="p">,</span><span class="w">
+</span><span class="w">	</span><span class="k">pub</span><span class="w"> </span><span class="n">arp_dev</span>: <span class="p">[</span>::<span class="n">c_char</span><span class="p">;</span><span class="w"> </span><span class="mi">16</span><span class="p">],</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>Translating the <code>dnsmasq</code> snippet as best I could to Rust left me with:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="kd">let</span><span class="w"> </span><span class="n">addr_in</span>: <span class="nc">libc</span>::<span class="n">sockaddr_in</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">libc</span>::<span class="n">sockaddr_in</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">	</span><span class="n">sin_family</span>: <span class="nc">libc</span>::<span class="n">AF_INET</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">_</span><span class="p">,</span><span class="w">
+</span><span class="w">	</span><span class="n">sin_port</span>: <span class="nc">port</span><span class="p">.</span><span class="n">to_be</span><span class="p">(),</span><span class="w">
+</span><span class="w">	</span><span class="n">sin_addr</span>: <span class="nc">unsafe</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="o">&amp;</span><span class="n">yiaddr</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">_</span><span class="p">)</span><span class="w"> </span><span class="p">},</span><span class="w">
+</span><span class="w">	</span><span class="p">..</span><span class="k">unsafe</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span>::<span class="n">mem</span>::<span class="n">zeroed</span><span class="p">()</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">};</span><span class="w">
+</span><span class="w"></span><span class="c1">// memcpy to sockaddr for arp_req
+</span><span class="c1"></span><span class="kd">let</span><span class="w"> </span><span class="n">arp_pa</span>: <span class="nc">libc</span>::<span class="n">sockaddr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">unsafe</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span>::<span class="n">mem</span>::<span class="n">transmute</span><span class="p">(</span><span class="n">addr_in</span><span class="p">)</span><span class="w"> </span><span class="p">};</span><span class="w">
+</span><span class="w"></span><span class="c1">// create arp_ha (for hardware addr)
+</span><span class="c1"></span><span class="kd">let</span><span class="w"> </span><span class="n">arp_ha</span>: <span class="nc">libc</span>::<span class="n">sockaddr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">libc</span>::<span class="n">sockaddr</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">	</span><span class="n">sa_family</span>: <span class="nc">htype</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">_</span><span class="p">,</span><span class="w">
+</span><span class="w">	</span><span class="n">sa_data</span>: <span class="nc">unsafe</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">		</span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">sa_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="mi">14</span><span class="p">];</span><span class="w">
+</span><span class="w">		</span><span class="kd">let</span><span class="w"> </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chaddr</span><span class="p">.</span><span class="n">len</span><span class="p">();</span><span class="w">
+</span><span class="w">		</span><span class="n">sa_data</span><span class="p">[..</span><span class="n">len</span><span class="p">].</span><span class="n">copy_from_slice</span><span class="p">(</span><span class="n">std</span>::<span class="n">mem</span>::<span class="n">transmute</span>::<span class="o">&lt;</span><span class="n">_</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="p">[</span><span class="n">libc</span>::<span class="n">c_char</span><span class="p">]</span><span class="o">&gt;</span><span class="p">(</span><span class="n">chaddr</span><span class="p">));</span><span class="w">
+</span><span class="w">		</span><span class="n">sa_data</span><span class="w">
+</span><span class="w">	</span><span class="p">},</span><span class="w">
+</span><span class="w"></span><span class="p">};</span><span class="w">
+</span><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="n">arp_req</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">libc</span>::<span class="n">arpreq</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">	</span><span class="n">arp_pa</span><span class="p">,</span><span class="w">
+</span><span class="w">	</span><span class="n">arp_ha</span><span class="p">,</span><span class="w">
+</span><span class="w">	</span><span class="n">arp_flags</span>: <span class="nc">libc</span>::<span class="n">ATF_COM</span><span class="p">,</span><span class="w">
+</span><span class="w">	</span><span class="p">..</span><span class="k">unsafe</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span>::<span class="n">mem</span>::<span class="n">zeroed</span><span class="p">()</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">};</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="kd">let</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">unsafe</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">	</span><span class="n">libc</span>::<span class="n">ioctl</span><span class="p">(</span><span class="w">
+</span><span class="w">		</span><span class="n">soc</span><span class="p">.</span><span class="n">as_raw_fd</span><span class="p">(),</span><span class="w">
+</span><span class="w">		</span><span class="n">libc</span>::<span class="n">SIOCSARP</span><span class="p">,</span><span class="w">
+</span><span class="w">		</span><span class="o">&amp;</span><span class="n">arp_req</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">libc</span>::<span class="n">arpreq</span><span class="p">,</span><span class="w">
+</span><span class="w">	</span><span class="p">)</span><span class="w">
+</span><span class="w"></span><span class="p">};</span><span class="w">
+</span><span class="w"></span><span class="k">if</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nb">Err</span><span class="p">(</span><span class="n">io</span>::<span class="n">Error</span>::<span class="n">last_os_error</span><span class="p">());</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>If you run this code with some values for <code>yiaddr</code>/<code>port</code>/<code>htype</code> &amp; <code>chaddr</code> then <code>cat /proc/net/arp</code> you should see an entry populated in the table.</p>
+
+<p>Lots of unsafe here, but that&rsquo;s to be expected given we are using the C FFI. I found that I had to first put the IP to-be-injected (<code>addr_in</code>) as a <code>sockaddr_in</code> then transmute to <code>sockaddr</code> in order to set <code>arp_pa</code> properly. Of note, <code>sa_data</code> is an array of <code>char</code>. I didn&rsquo;t realize at first that <code>char</code> is signed or unsigned depending on the architecture. I figured this out the hard way by using <code>i8</code> at first and having this code explode on ARM where <code>char</code> is unsigned. Switching the Rust code to use <code>c_char</code> fixed that. This was pointed out by a helpful user on discord whose handle I have forgotten (thank you!).</p>
+
+<p>Another option for calling <code>ioctl</code> would be to use the <code>nix</code> crate. Because the surface area of <code>ioctl</code> is so broad, <code>nix</code> has macros that generate functions for calling <code>ioctl</code>. After some futzing, I found that this worked:</p>
+<div class="highlight"><pre class="chroma">nix::ioctl_write_ptr_bad!(siocsarp, nix::libc::SIOCSARP, nix::libc::arpreq);</pre></div>
+<p>This generates a function called <code>siocsarp</code> that takes a <code>arpreq</code>. You can call it like:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">if</span><span class="w"> </span><span class="kd">let</span><span class="w"> </span><span class="nb">Err</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">unsafe</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">siocsarp</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">arp_req</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">_</span><span class="p">)</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// call the macro generated function
+</span><span class="c1"></span><span class="w">	</span><span class="c1">// error
+</span><span class="c1"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+<p>I&rsquo;m not particularly sure if <code>ioctl</code>&rsquo;s ARP syscalls need a certain socket type, but a UDP socket seems to work. As I was figuring all this out, I was tipped off several times that this method of setting the ARP cache is outdated. Firstly, the <code>arp</code> manpage says:</p>
+
+<blockquote>
+<p>There is also a mechanism for managing the ARP cache in user-space by using netlink(7) sockets</p>
+</blockquote>
+
+<p>Secondly, the <code>ip neigh add</code> method of adding entries uses netlink sockets. Only the anachronistic <code>arp</code> uses <code>ioctl</code>.</p>
+
+<p>I&rsquo;ll save learning about netlink sockets for another day, however. If it&rsquo;s good enough for dnsmasq&hellip; :)</p>
+
+
+        
+
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://leshow.github.io/post/dhcpm/" data-toggle="tooltip" data-placement="top" title="Rust superpowered DHCP cli with rhai scripts">&larr; Previous Post</a>
+            </li>
+          
+          
+        </ul>
+      
+
+
+      
+        
+        
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="mailto:cameron.evan@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://github.com/leshow" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/evan_cam_" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://linkedin.com/in/evan-cameron" title="LinkedIn">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-linkedin fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              <a href="leshow.github.io">Evan Cameron</a>
+            
+          
+
+          &nbsp;&bull;&nbsp;
+          2022
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://leshow.github.io">Esoterically Typed</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.57.2</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/katex.min.js" integrity="sha384-/y1Nn9+QQAipbNQWU65krzJralCnuOasHncUFXGkdwntGeSvQicrYkiUBwsgUqc1" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.7.1/contrib/auto-render.min.js" integrity="sha384-dq1/gEHSxPZQ7DdrM82ID4YVol9BYyU7GbWlIwnwyPzotpoc57wDw/guX8EaYGPx" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/main.js"></script>
+<script src="https://leshow.github.io/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> $(document).ready(function() {$("pre.chroma").css("padding","0");}); </script><script> renderMathInElement(document.body); </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script>
+<script src="https://leshow.github.io/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+  </body>
+</html>
+
